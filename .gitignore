@@ -12,8 +12,7 @@ build/
 .env.*.local
 
 # Prisma
-/src/generated/prisma
-prisma/migrations/
+prisma/generated/
 
 # IDE
 .vscode/

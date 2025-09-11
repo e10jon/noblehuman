@@ -9,7 +9,86 @@ generator json {
   provider = "prisma-json-types-generator"
 }
 
+generator zod {
+  provider = "prisma-zod-generator"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String @id @default(ulid())
+  email    String @unique
+  password String
+  /// [UserData]
+  data     Json
+
+  exercises UserExercise[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Exercise {
+  id   String @id @default(ulid())
+  name String
+
+  steps         ExerciseStep[]
+  userExercises UserExercise[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ExerciseStepType {
+  static
+  aiPrompt
+}
+
+model ExerciseStep {
+  id         String           @id @default(ulid())
+  exerciseId String
+  order      Int
+  type       ExerciseStepType
+
+  exercise          Exercise           @relation(fields: [exerciseId], references: [id])
+  userExerciseSteps UserExerciseStep[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([exerciseId])
+}
+
+model UserExercise {
+  id         String @id @default(ulid())
+  userId     String
+  exerciseId String
+
+  user              User               @relation(fields: [userId], references: [id])
+  exercise          Exercise           @relation(fields: [exerciseId], references: [id])
+  userExerciseSteps UserExerciseStep[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([exerciseId])
+}
+
+model UserExerciseStep {
+  id             String @id @default(ulid())
+  exerciseStepId String
+  userExerciseId String
+
+  userExercise UserExercise @relation(fields: [userExerciseId], references: [id])
+  exerciseStep ExerciseStep @relation(fields: [exerciseStepId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userExerciseId])
+  @@index([exerciseStepId])
 }

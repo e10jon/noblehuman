@@ -35,6 +35,6 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "prisma/json-types.d.ts"],
   "exclude": ["node_modules", "dist", "build"]
 }
