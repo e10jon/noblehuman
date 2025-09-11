@@ -1,9 +1,17 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useId } from 'react';
+import { useForm } from 'react-hook-form';
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { Form, Link, redirect, useLoaderData } from 'react-router';
-import type { CompletionStep, ExerciseStep } from '../../prisma/generated/client';
+import { data, useFetcher, useLoaderData, useSearchParams } from 'react-router';
 import { requireUser } from '../lib/auth';
 import { prisma } from '../lib/db';
+import {
+  completionActionSchema,
+  ikigaiResponseSchema,
+  type StepResponse,
+  shortPhraseResponseSchema,
+  textResponseSchema,
+} from '../schemas/completion';
 
 export const meta: MetaFunction<typeof loader> = ({ data: loaderData }) => {
   return [
@@ -101,455 +109,439 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   };
 }
 
-export async function action({ request, params }: ActionFunctionArgs) {
+export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUser(request);
-  const exerciseId = params.id;
+  const json = await request.json();
+  const result = completionActionSchema.safeParse(json);
 
-  if (!exerciseId) {
-    throw new Response('Not Found', { status: 404 });
+  if (!result.success) {
+    return data({ error: result.error.issues[0]?.message || 'Invalid input' }, { status: 400 });
   }
 
-  const formData = await request.formData();
-  const action = formData.get('_action') as string;
-  const stepId = formData.get('stepId') as string;
-  const responseType = formData.get('responseType') as string;
+  const { stepId, exerciseId, action: actionType, responses } = result.data;
 
-  if (action === 'navigate') {
-    const targetStep = formData.get('targetStep') as string;
-    return redirect(`/exercise/${exerciseId}?step=${targetStep}`);
-  }
-
-  const completion = await prisma.completion.findFirst({
+  let completionStep = await prisma.completionStep.findFirst({
     where: {
-      userId: user.id,
-      exerciseId,
+      exerciseStepId: stepId,
+      completion: {
+        userId: user.id,
+        exerciseId,
+      },
+    },
+    include: {
+      completion: true,
     },
   });
 
-  if (!completion) {
-    throw new Response('Completion not found', { status: 404 });
-  }
+  if (!completionStep) {
+    const completion = await prisma.completion.findFirst({
+      where: {
+        userId: user.id,
+        exerciseId,
+      },
+    });
 
-  let responses: PrismaJson.StepResponses;
-
-  switch (responseType) {
-    case 'text':
-    case 'shortPhrase':
-      responses = {
-        type: responseType as 'text' | 'shortPhrase',
-        content: formData.get('response') as string,
-      };
-      break;
-
-    case 'statement':
-      responses = {
-        type: 'statement',
-        content: formData.get('statement') as string,
-      };
-      break;
-
-    case 'multiPrompt': {
-      const promptResponses: Array<{ promptId: string; question: string; answer: string }> = [];
-      for (const [key, value] of formData.entries()) {
-        if (key.startsWith('prompt-')) {
-          const promptId = key.replace('prompt-', '');
-          const question = formData.get(`question-${promptId}`) as string;
-          promptResponses.push({
-            promptId,
-            question,
-            answer: value as string,
-          });
-        }
-      }
-      responses = {
-        type: 'multiPrompt',
-        responses: promptResponses,
-      };
-      break;
+    if (!completion) {
+      return data({ error: 'Completion not found' }, { status: 404 });
     }
 
-    case 'ikigaiGrid':
-      responses = {
-        type: 'ikigaiGrid',
-        passion: formData.get('passion') as string,
-        dislikes: formData.get('dislikes') as string,
-        competency: formData.get('competency') as string,
-        ineptitude: formData.get('ineptitude') as string,
-        financialSuccess: formData.get('financialSuccess') as string,
-        financialMissed: formData.get('financialMissed') as string,
-        impact: formData.get('impact') as string,
-        indifference: formData.get('indifference') as string,
-      };
-      break;
-
-    default:
-      responses = { type: 'text', content: '' };
-  }
-
-  const completionStep = await prisma.completionStep.findFirst({
-    where: {
-      completionId: completion.id,
-      exerciseStepId: stepId,
-    },
-  });
-
-  if (completionStep) {
-    await prisma.completionStep.update({
-      where: { id: completionStep.id },
+    completionStep = await prisma.completionStep.create({
       data: {
+        exerciseStepId: stepId,
+        completionId: completion.id,
         responses,
-        completed: true,
+        completed: actionType === 'complete',
+      },
+      include: {
+        completion: true,
       },
     });
   } else {
-    await prisma.completionStep.create({
+    completionStep = await prisma.completionStep.update({
+      where: { id: completionStep.id },
       data: {
-        completionId: completion.id,
-        exerciseStepId: stepId,
         responses,
-        completed: true,
+        completed: actionType === 'complete' || completionStep.completed,
+      },
+      include: {
+        completion: true,
       },
     });
   }
 
-  const url = new URL(request.url);
-  const currentStepParam = url.searchParams.get('step');
-  const exercise = await prisma.exercise.findUnique({
-    where: { id: exerciseId },
-    include: {
-      steps: {
-        orderBy: { order: 'asc' },
-      },
-    },
-  });
-
-  if (!exercise) {
-    throw new Response('Not Found', { status: 404 });
+  if (actionType === 'next') {
+    const url = new URL(request.url);
+    const currentStep = parseInt(url.searchParams.get('step') || '0', 10);
+    return data({ success: true, nextStep: currentStep + 1 });
   }
 
-  const updatedCompletion = await prisma.completion.findFirst({
-    where: {
-      userId: user.id,
-      exerciseId,
-    },
-    include: {
-      steps: true,
-    },
-  });
-
-  const completedStepIds = updatedCompletion?.steps.filter((s) => s.completed).map((s) => s.exerciseStepId) || [];
-  const currentStepIndex = currentStepParam
-    ? parseInt(currentStepParam, 10)
-    : exercise.steps.findIndex((s) => s.id === stepId);
-  const allStepsCompleted = completedStepIds.length === exercise.steps.length;
-
-  // If all steps are completed, stay on the current step to allow further edits
-  if (allStepsCompleted) {
-    return redirect(`/exercise/${exerciseId}?step=${currentStepIndex}`);
+  if (actionType === 'previous') {
+    const url = new URL(request.url);
+    const currentStep = parseInt(url.searchParams.get('step') || '0', 10);
+    return data({ success: true, nextStep: Math.max(0, currentStep - 1) });
   }
 
-  // Find the next incomplete step
-  const nextIncompleteIndex = exercise.steps.findIndex(
-    (step, index) => index > currentStepIndex && !completedStepIds.includes(step.id)
-  );
-
-  if (nextIncompleteIndex !== -1) {
-    return redirect(`/exercise/${exerciseId}?step=${nextIncompleteIndex}`);
-  } else if (currentStepIndex < exercise.steps.length - 1) {
-    return redirect(`/exercise/${exerciseId}?step=${currentStepIndex + 1}`);
-  }
-
-  return redirect(`/exercise/${exerciseId}?step=${currentStepIndex}`);
+  return data({ success: true });
 }
 
-function StepForm({
-  step,
-  currentCompletionStep,
-}: {
-  step: ExerciseStep;
-  currentCompletionStep: CompletionStep | null | undefined;
-}) {
-  const statementId = useId();
-  const responseId = useId();
-  const shortResponseId = useId();
-  const prompts = step.prompts as PrismaJson.ExercisePrompts | null;
-  const savedResponses = currentCompletionStep?.responses as PrismaJson.StepResponses | null;
+interface StepWithPrompts {
+  prompts?: PrismaJson.ExercisePrompts | null;
+  id: string;
+  title: string;
+  description: string;
+  responseType: string;
+  instructionSections?: PrismaJson.InstructionSections | null;
+  questionSet?: PrismaJson.QuestionSet | null;
+  worksheetTemplates?: PrismaJson.WorksheetTemplates | null;
+  resources?: PrismaJson.Resources | null;
+  aiPrompts?: PrismaJson.AIPrompts | null;
+}
 
-  switch (step.responseType) {
-    case 'multiPrompt':
-      return (
-        <div className="space-y-6">
-          {prompts?.map((prompt) => (
+function TextResponseForm({ step, onSubmit }: { step: StepWithPrompts; onSubmit: (data: StepResponse) => void }) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(textResponseSchema),
+  });
+  const prompts = step.prompts || [];
+  const textareaId = useId();
+
+  return (
+    <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-4">
+      {prompts.length > 0 ? (
+        <>
+          {prompts.map((prompt) => (
             <div key={prompt.id}>
-              <label htmlFor={`prompt-${prompt.id}`} className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor={textareaId} className="block text-sm font-medium text-gray-700 mb-2">
                 {prompt.question}
               </label>
               {prompt.helpText && <p className="text-sm text-gray-500 mb-2">{prompt.helpText}</p>}
-              <input type="hidden" name={`question-${prompt.id}`} value={prompt.question} />
-              <textarea
-                id={`prompt-${prompt.id}`}
-                name={`prompt-${prompt.id}`}
-                rows={4}
-                required
-                defaultValue={
-                  savedResponses?.type === 'multiPrompt'
-                    ? savedResponses.responses.find((r) => r.promptId === prompt.id)?.answer
-                    : ''
-                }
-                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                placeholder={prompt.placeholder}
-              />
-              {prompt.type === 'ai' && (
-                <p className="mt-1 text-xs text-gray-500">
-                  AI prompt - Consider using ChatGPT or Claude for this question
-                </p>
-              )}
             </div>
           ))}
-        </div>
-      );
-
-    case 'ikigaiGrid':
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {prompts?.map((prompt) => (
-            <div key={prompt.id}>
-              <label htmlFor={prompt.id} className="block text-sm font-medium text-gray-700 mb-2">
-                {prompt.question}
-              </label>
-              <textarea
-                id={prompt.id}
-                name={prompt.id}
-                rows={3}
-                required
-                defaultValue={
-                  savedResponses?.type === 'ikigaiGrid'
-                    ? ((savedResponses as PrismaJson.IkigaiGridResponse)[
-                        prompt.id as keyof PrismaJson.IkigaiGridResponse
-                      ] as string) || ''
-                    : ''
-                }
-                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-              />
-            </div>
-          ))}
-        </div>
-      );
-
-    case 'statement':
-      return (
-        <div>
-          <label htmlFor={statementId} className="block text-sm font-medium text-gray-700 mb-2">
-            Your Best Life Statement
-          </label>
-          <p className="text-sm text-gray-500 mb-4">
-            Write your Best Life vision in 1-2 sentences. Be bold and authentic.
-          </p>
           <textarea
-            id={statementId}
-            name="statement"
+            id={textareaId}
+            {...register('content')}
+            placeholder={prompts[0]?.placeholder}
             rows={4}
-            required
-            defaultValue={savedResponses?.type === 'statement' ? savedResponses.content : ''}
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-            placeholder="In my best life, I..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
-        </div>
-      );
-
-    case 'shortPhrase':
-      return (
+          {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content?.message}</p>}
+        </>
+      ) : (
         <div>
-          <label htmlFor={shortResponseId} className="block text-sm font-medium text-gray-700 mb-2">
-            {prompts?.[0]?.question || 'Your Response'}
-          </label>
-          {prompts?.[0]?.helpText && <p className="text-sm text-gray-500 mb-2">{prompts[0].helpText}</p>}
-          <input
-            type="text"
-            id={shortResponseId}
-            name="response"
-            required
-            defaultValue={savedResponses?.type === 'shortPhrase' ? savedResponses.content : ''}
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-            placeholder="Enter a short phrase..."
-          />
-        </div>
-      );
-
-    default:
-      return (
-        <div>
-          <label htmlFor={responseId} className="block text-sm font-medium text-gray-700 mb-2">
-            Your Response
-          </label>
           <textarea
-            id={responseId}
-            name="response"
-            rows={6}
-            required
-            defaultValue={savedResponses?.type === 'text' ? savedResponses.content : ''}
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+            {...register('content')}
+            placeholder="Enter your response"
+            rows={4}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
+          {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content?.message}</p>}
         </div>
-      );
-  }
+      )}
+      <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+        Save Response
+      </button>
+    </form>
+  );
+}
+
+function ShortPhraseResponseForm({
+  step,
+  onSubmit,
+}: {
+  step: StepWithPrompts;
+  onSubmit: (data: StepResponse) => void;
+}) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(shortPhraseResponseSchema),
+  });
+  const prompt = step.prompts?.[0];
+  const inputId = 'short-phrase-input';
+
+  return (
+    <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-4">
+      {prompt && (
+        <div>
+          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-2">
+            {prompt.question}
+          </label>
+          {prompt.helpText && <p className="text-sm text-gray-500 mb-2">{prompt.helpText}</p>}
+          <input
+            id={inputId}
+            {...register('content', { required: 'Response is required' })}
+            type="text"
+            placeholder={prompt.placeholder}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          />
+          {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content.message}</p>}
+        </div>
+      )}
+      <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+        Save Response
+      </button>
+    </form>
+  );
+}
+
+interface StepWithQuestionnaire {
+  questionSet?: PrismaJson.QuestionSet | null;
+  id: string;
+  title: string;
+  description: string;
+  responseType: string;
+  instructionSections?: PrismaJson.InstructionSections | null;
+  prompts?: PrismaJson.ExercisePrompts | null;
+  worksheetTemplates?: PrismaJson.WorksheetTemplates | null;
+  resources?: PrismaJson.Resources | null;
+  aiPrompts?: PrismaJson.AIPrompts | null;
+}
+
+function QuestionnaireResponseForm({
+  step,
+  onSubmit,
+}: {
+  step: StepWithQuestionnaire;
+  onSubmit: (data: StepResponse) => void;
+}) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<{ responses: Array<{ questionId: string; answer: string }> }>();
+  const questions = step.questionSet?.questions || [];
+
+  const onFormSubmit = handleSubmit((data) => {
+    const responses = data.responses.map((r, index) => ({
+      questionId: r.questionId,
+      question: questions[index]?.question || '',
+      answer: r.answer,
+    }));
+    onSubmit({ type: 'questionnaire', responses });
+  });
+
+  return (
+    <form onSubmit={onFormSubmit} className="space-y-4">
+      {step.questionSet && (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{step.questionSet.title}</h3>
+          {step.questionSet.description && <p className="text-gray-600 mb-4">{step.questionSet.description}</p>}
+        </div>
+      )}
+      {questions.map((question, index) => {
+        const inputId = `question-${question.id}`;
+        return (
+          <div key={question.id}>
+            <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-2">
+              {question.number}. {question.question}
+            </label>
+            {question.type === 'multiline' ? (
+              <textarea
+                id={inputId}
+                {...register(`responses.${index}.answer`, {
+                  required: question.required ? 'Answer is required' : false,
+                })}
+                placeholder={question.placeholder}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            ) : (
+              <input
+                id={inputId}
+                {...register(`responses.${index}.answer`, {
+                  required: question.required ? 'Answer is required' : false,
+                })}
+                type="text"
+                placeholder={question.placeholder}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            )}
+            <input type="hidden" {...register(`responses.${index}.questionId`)} value={question.id} />
+            {errors.responses?.[index]?.answer && (
+              <p className="mt-1 text-sm text-red-600">{errors.responses[index]?.answer?.message}</p>
+            )}
+          </div>
+        );
+      })}
+      <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+        Save Responses
+      </button>
+    </form>
+  );
+}
+
+function IkigaiGridResponseForm({ onSubmit }: { step: StepWithPrompts; onSubmit: (data: StepResponse) => void }) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(ikigaiResponseSchema),
+  });
+
+  const ikigaiFields = [
+    { name: 'passion', label: 'What You Love (Passion)', placeholder: 'What activities make you lose track of time?' },
+    { name: 'dislikes', label: 'What You Dislike', placeholder: 'What activities drain your energy?' },
+    {
+      name: 'competency',
+      label: "What You're Good At (Competency)",
+      placeholder: 'What skills come naturally to you?',
+    },
+    { name: 'ineptitude', label: "What You're Not Good At", placeholder: 'What areas challenge you?' },
+    { name: 'financialSuccess', label: 'What You Can Be Paid For', placeholder: 'What skills are marketable?' },
+    {
+      name: 'financialMissed',
+      label: "What You Can't Be Paid For",
+      placeholder: 'What activities have no market value?',
+    },
+    { name: 'impact', label: 'What The World Needs', placeholder: 'How can you make a difference?' },
+    { name: 'indifference', label: "What The World Doesn't Need", placeholder: 'What has little impact?' },
+  ] as const;
+
+  const onFormSubmit = handleSubmit((data) => {
+    onSubmit(data);
+  });
+
+  return (
+    <form onSubmit={onFormSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {ikigaiFields.map((field) => (
+          <div key={field.name}>
+            <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 mb-2">
+              {field.label}
+            </label>
+            <textarea
+              id={field.name}
+              {...register(field.name as keyof typeof ikigaiResponseSchema.shape)}
+              placeholder={field.placeholder}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            {errors[field.name] && <p className="mt-1 text-sm text-red-600">{errors[field.name]?.message}</p>}
+          </div>
+        ))}
+      </div>
+      <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+        Save Ikigai Grid
+      </button>
+    </form>
+  );
 }
 
 export default function Exercise() {
-  const { exercise, currentStep, currentStepIndex, isLastStep, isCompleted, currentCompletionStep, completedStepIds } =
-    useLoaderData<typeof loader>();
+  const { exercise, currentStep, currentStepIndex, isLastStep, completedStepIds } = useLoaderData<typeof loader>();
+  const fetcher = useFetcher();
+  const [, setSearchParams] = useSearchParams();
+
+  const handleSubmit = (responses: StepResponse) => {
+    fetcher.submit(
+      JSON.stringify({
+        stepId: currentStep.id,
+        exerciseId: exercise.id,
+        action: 'save',
+        responses,
+      }),
+      {
+        method: 'post',
+        encType: 'application/json',
+      }
+    );
+  };
+
+  const handleNavigation = (action: 'next' | 'previous' | 'complete') => {
+    if (action === 'next' && !isLastStep) {
+      setSearchParams({ step: String(currentStepIndex + 1) });
+    } else if (action === 'previous' && currentStepIndex > 0) {
+      setSearchParams({ step: String(currentStepIndex - 1) });
+    }
+  };
+
+  const renderStepForm = () => {
+    switch (currentStep.responseType) {
+      case 'text':
+      case 'statement':
+      case 'narrative':
+        return <TextResponseForm step={currentStep} onSubmit={handleSubmit} />;
+      case 'shortPhrase':
+        return <ShortPhraseResponseForm step={currentStep} onSubmit={handleSubmit} />;
+      case 'questionnaire':
+        return <QuestionnaireResponseForm step={currentStep} onSubmit={handleSubmit} />;
+      case 'multiPrompt':
+        return <TextResponseForm step={currentStep} onSubmit={handleSubmit} />;
+      case 'ikigaiGrid':
+        return <IkigaiGridResponseForm step={currentStep} onSubmit={handleSubmit} />;
+      default:
+        return (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-yellow-800">This response type ({currentStep.responseType}) is not yet implemented.</p>
+          </div>
+        );
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        {isCompleted && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <svg
-                className="h-5 w-5 text-green-500 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                role="img"
-                aria-label="Completed"
-              >
-                <title>Completed</title>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-green-800">Exercise Completed!</h3>
-                <p className="text-sm text-green-700 mt-1">
-                  You've completed all steps. You can still review and edit your responses below.
-                </p>
-              </div>
-              <Link
-                to="/"
-                className="ml-4 px-3 py-1.5 text-sm font-medium text-green-800 bg-green-100 rounded-md hover:bg-green-200"
-              >
-                Back to Home
-              </Link>
-            </div>
-          </div>
-        )}
-        <div className="mb-8">
-          <Link to="/" className="text-indigo-600 hover:text-indigo-500 text-sm">
-            ← Back to exercises
-          </Link>
-          <h1 className="mt-4 text-3xl font-bold text-gray-900">{exercise.name}</h1>
-          {exercise.weekNumber && <p className="mt-2 text-gray-600">Week {exercise.weekNumber}</p>}
-        </div>
-
-        <div className="mb-6">
-          <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-            <span>
-              Step {currentStepIndex + 1} of {exercise.steps.length}
-            </span>
-            <span>{Math.round((completedStepIds.length / exercise.steps.length) * 100)}% Complete</span>
-          </div>
-
-          <div className="flex gap-2 mb-4">
-            {exercise.steps.map((step, index) => {
-              const isActive = index === currentStepIndex;
-              const isComplete = completedStepIds.includes(step.id);
-
-              return (
-                <Form key={step.id} method="post" className="flex-1">
-                  <input type="hidden" name="_action" value="navigate" />
-                  <input type="hidden" name="targetStep" value={index} />
-                  <button
-                    type="submit"
-                    className={`
-                      w-full py-2 px-3 text-xs font-medium rounded-md transition-colors
-                      ${
-                        isActive
-                          ? 'bg-indigo-600 text-white'
-                          : isComplete
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }
-                    `}
-                    title={step.title}
-                  >
-                    {index + 1}. {isComplete && '✓'}
-                  </button>
-                </Form>
-              );
-            })}
-          </div>
-
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(completedStepIds.length / exercise.steps.length) * 100}%` }}
-            />
-          </div>
-        </div>
-
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white shadow rounded-lg">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">{currentStep.title}</h2>
+            <h1 className="text-2xl font-bold text-gray-900">{exercise.name}</h1>
+            <div className="mt-2 flex items-center text-sm text-gray-500">
+              <span>
+                Step {currentStepIndex + 1} of {exercise.steps.length}
+              </span>
+              <span className="mx-2">•</span>
+              <span>{Math.round((completedStepIds.length / exercise.steps.length) * 100)}% Complete</span>
+            </div>
           </div>
 
-          <div className="p-6">
-            {currentStep.description && (
-              <div className="mb-6 prose prose-sm max-w-none">
-                <p style={{ whiteSpace: 'pre-wrap' }}>{currentStep.description}</p>
+          <div className="px-6 py-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">{currentStep.title}</h2>
+            {currentStep.description && <p className="text-gray-600 mb-6">{currentStep.description}</p>}
+
+            {currentStep.instructionSections?.map((section) => (
+              <div key={section.id} className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{section.title}</h3>
+                <p className="text-gray-600">{section.content}</p>
+              </div>
+            ))}
+
+            <div className="mt-6">{renderStepForm()}</div>
+
+            {fetcher.data?.error && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-800">{fetcher.data.error}</p>
               </div>
             )}
 
-            <Form method="post" className="space-y-6">
-              <input type="hidden" name="stepId" value={currentStep.id} />
-              <input type="hidden" name="responseType" value={currentStep.responseType} />
-
-              <StepForm step={currentStep} currentCompletionStep={currentCompletionStep} />
-
-              <div className="flex justify-between pt-4 gap-4">
-                <Form method="post">
-                  <input type="hidden" name="_action" value="navigate" />
-                  <input type="hidden" name="targetStep" value={currentStepIndex - 1} />
-                  <button
-                    type="submit"
-                    disabled={currentStepIndex === 0}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    ← Previous
-                  </button>
-                </Form>
-
-                <div className="flex gap-2">
-                  {currentStepIndex < exercise.steps.length - 1 && (
-                    <Form method="post">
-                      <input type="hidden" name="_action" value="navigate" />
-                      <input type="hidden" name="targetStep" value={currentStepIndex + 1} />
-                      <button
-                        type="submit"
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                      >
-                        Skip →
-                      </button>
-                    </Form>
-                  )}
-
-                  <button
-                    type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    {isCompleted
-                      ? 'Update Response'
-                      : completedStepIds.includes(currentStep.id)
-                        ? 'Update & Continue'
-                        : isLastStep && completedStepIds.length === exercise.steps.length - 1
-                          ? 'Complete Exercise'
-                          : 'Save & Next'}
-                  </button>
-                </div>
+            {fetcher.data?.success && (
+              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-green-800">Response saved successfully!</p>
               </div>
-            </Form>
+            )}
+          </div>
+
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-between">
+            <button
+              type="button"
+              onClick={() => handleNavigation('previous')}
+              disabled={currentStepIndex === 0}
+              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNavigation('next')}
+              disabled={isLastStep}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLastStep ? 'Complete' : 'Next'}
+            </button>
           </div>
         </div>
       </div>

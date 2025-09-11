@@ -1,8 +1,11 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useId } from 'react';
+import { useForm } from 'react-hook-form';
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { data, Form, Link, redirect, useActionData, useSearchParams } from 'react-router';
+import { data, Link, redirect, useActionData, useFetcher, useSearchParams } from 'react-router';
 import { createSessionCookie, createUser, getUserFromCookie } from '../lib/auth';
 import { prisma } from '../lib/db';
+import { type SignupSchema, signupSchema } from '../schemas/signup';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Sign Up - Noble Human' }, { name: 'description', content: 'Create your Noble Human account' }];
@@ -20,15 +23,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const formData = await request.formData();
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const redirectTo = (formData.get('redirectTo') as string) || '/';
+  const json = await request.json();
+  const result = signupSchema.safeParse(json);
 
-  if (!(email && password)) {
-    return data({ error: 'Email and password are required' }, { status: 400 });
+  if (!result.success) {
+    const errors = result.error.issues;
+    return data({ error: errors[0]?.message || 'Invalid input' }, { status: 400 });
   }
 
+  const { email, password, redirectTo = '/' } = result.data;
   const existingUser = await prisma.user.findUnique({
     where: { email },
   });
@@ -55,9 +58,27 @@ export default function SignUp() {
   const actionData = useActionData<typeof action>();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/';
-
+  const fetcher = useFetcher();
   const emailId = useId();
   const passwordId = useId();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(signupSchema),
+  });
+
+  const onSubmit = (data: SignupSchema) => {
+    fetcher.submit(
+      { ...data, redirectTo },
+      {
+        method: 'post',
+        encType: 'application/json',
+      }
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -73,22 +94,20 @@ export default function SignUp() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <Form method="post" className="space-y-6">
-            <input type="hidden" name="redirectTo" value={redirectTo} />
-
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
               <label htmlFor={emailId} className="block text-sm font-medium text-gray-700">
                 Email address
               </label>
               <div className="mt-1">
                 <input
+                  {...register('email')}
                   id={emailId}
-                  name="email"
                   type="email"
                   autoComplete="email"
-                  required
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
+                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
               </div>
             </div>
 
@@ -98,21 +117,21 @@ export default function SignUp() {
               </label>
               <div className="mt-1">
                 <input
+                  {...register('password')}
                   id={passwordId}
-                  name="password"
                   type="password"
                   autoComplete="new-password"
-                  required
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
+                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
               </div>
             </div>
 
-            {actionData?.error && (
+            {(actionData?.error || fetcher.data?.error) && (
               <div className="rounded-md bg-red-50 p-4">
                 <div className="flex">
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">{actionData.error}</h3>
+                    <h3 className="text-sm font-medium text-red-800">{actionData?.error || fetcher.data?.error}</h3>
                   </div>
                 </div>
               </div>
@@ -121,12 +140,13 @@ export default function SignUp() {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                disabled={fetcher.state === 'submitting'}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
-                Create Account
+                {fetcher.state === 'submitting' ? 'Creating Account...' : 'Create Account'}
               </button>
             </div>
-          </Form>
+          </form>
         </div>
       </div>
     </div>
