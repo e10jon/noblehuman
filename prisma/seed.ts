@@ -1,31 +1,31 @@
-import { PrismaClient } from "./generated/client.js";
+import { PrismaClient } from './generated/client.js';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding NobleHuman database...");
+  console.log('Seeding NobleHuman database...');
 
   const nobleHumanExercise = await prisma.exercise.create({
     data: {
       name: "Dating Myself: The Most Interesting Person I've Just Met",
       weekNumber: 1,
-      buddhismConcept: "Best Life Foundation",
+      buddhismConcept: 'Best Life Foundation',
       metadata: {
         totalSteps: 4,
         estimatedMinutes: 120,
         outcomes: [
-          "Develop deep self-awareness through suffering exploration",
-          "Identify desires and needs for your best life",
-          "Create an Ikigai framework for purpose",
-          "Articulate your Best Life vision"
-        ]
+          'Develop deep self-awareness through suffering exploration',
+          'Identify desires and needs for your best life',
+          'Create an Ikigai framework for purpose',
+          'Articulate your Best Life vision',
+        ],
       },
       steps: {
         create: [
           {
             order: 1,
-            type: "static",
-            title: "Step One: Dating Myself - Suffering",
+            type: 'static',
+            title: 'Step One: Dating Myself - Suffering',
             description: `I invite you to go on a date with yourself. Not the version of you that shows up in a boardroom, on stage, or at dinner parties, but the quiet, soulful version of you. The one who has been through every moment of your life. The one who has never left your side.
 
 Imagine you just met someone truly fascinating — wise, layered, scarred, accomplished, still learning, still open, still hungry. You want to know everything about them. Their triumphs, their regrets, their deepest needs and quietest joys. That person is you.
@@ -41,19 +41,20 @@ Suffering, dukkha, is part of every life, from physical pain to emotional wounds
 So we begin here, with honesty and explore your hidden suffering.`,
             prompts: [
               {
-                id: "suffering-1",
-                question: "Knowing what you know about me, what do you think are the sufferings I carry quietly or subconsciously?",
-                type: "ai",
-                helpText: "Let the AI reflect on patterns it has observed about you"
-              }
+                id: 'suffering-1',
+                question:
+                  'Knowing what you know about me, what do you think are the sufferings I carry quietly or subconsciously?',
+                type: 'ai',
+                helpText: 'Let the AI reflect on patterns it has observed about you',
+              },
             ],
-            responseType: "multiPrompt",
-            groupSharing: false
+            responseType: 'multiPrompt',
+            groupSharing: false,
           },
           {
             order: 2,
-            type: "aiPrompt",
-            title: "Step One: Dating Myself - Desires",
+            type: 'aiPrompt',
+            title: 'Step One: Dating Myself - Desires',
             description: `## Desires
 
 After reflecting on the answers about your suffering, let's inquire further about what you truly need.
@@ -61,25 +62,25 @@ After reflecting on the answers about your suffering, let's inquire further abou
 Ask slowly - maybe one at a time. Let the response sit with you. You can engage the AI in further inquiry if something feels true, unclear, or revealing. Don't be afraid to press deeper. You may want to journal, meditate, or discuss it with your loved ones, friends or colleagues who can help you inquire further. This is an awareness practice.`,
             prompts: [
               {
-                id: "desires-1",
-                question: "What do I need more of to live my best life?",
-                type: "both",
-                helpText: "Consider both internal and external needs"
+                id: 'desires-1',
+                question: 'What do I need more of to live my best life?',
+                type: 'both',
+                helpText: 'Consider both internal and external needs',
               },
               {
-                id: "desires-2",
-                question: "What do I need less of to live my best life?",
-                type: "both",
-                helpText: "What's weighing you down or holding you back?"
-              }
+                id: 'desires-2',
+                question: 'What do I need less of to live my best life?',
+                type: 'both',
+                helpText: "What's weighing you down or holding you back?",
+              },
             ],
-            responseType: "multiPrompt",
-            groupSharing: false
+            responseType: 'multiPrompt',
+            groupSharing: false,
           },
           {
             order: 3,
-            type: "static",
-            title: "Step Two: Ikigai Expanded, Light and Shadow",
+            type: 'static',
+            title: 'Step Two: Ikigai Expanded, Light and Shadow',
             description: `Before you answer the big question, "What does my Best Life look like?," it helps to think in the Ikigai framework. Ikigai is a Japanese concept of "purpose - a reason for being." It is often visualized as the intersection of four key areas: What you love, What you are good at, What you can be paid for, and What the world needs. When all four align, it creates a life of fulfillment, contribution, and clarity.
 
 For further inquiry, I always like to look at both sides of the coin, the light and the shadow, because true alignment comes from full awareness.
@@ -89,246 +90,252 @@ For each of the four pairs below, I encourage you to ask AI or close friends so 
 Please write your thoughts freely first. Then, once you've gathered your raw reflections, synthesize your insights into 1–3 words or a short phrase for each column.`,
             prompts: [
               {
-                id: "passion",
+                id: 'passion',
                 question: "What are the things I've always loved doing?",
-                type: "both"
+                type: 'both',
               },
               {
-                id: "dislikes",
-                question: "What activities or tasks consistently drain me or frustrate me?",
-                type: "both"
+                id: 'dislikes',
+                question: 'What activities or tasks consistently drain me or frustrate me?',
+                type: 'both',
               },
               {
-                id: "competency",
-                question: "Where do I naturally excel at and I am so good that I am a league of my own?",
-                type: "both"
+                id: 'competency',
+                question: 'Where do I naturally excel at and I am so good that I am a league of my own?',
+                type: 'both',
               },
               {
-                id: "ineptitude",
-                question: "Where do I consistently fall short, struggle, or feel clumsy?",
-                type: "both"
+                id: 'ineptitude',
+                question: 'Where do I consistently fall short, struggle, or feel clumsy?',
+                type: 'both',
               },
               {
-                id: "financialSuccess",
-                question: "Where and how have I successfully made money in the past?",
-                type: "self"
+                id: 'financialSuccess',
+                question: 'Where and how have I successfully made money in the past?',
+                type: 'self',
               },
               {
-                id: "financialMissed",
-                question: "Where have I missed opportunities or made financial mistakes?",
-                type: "self"
+                id: 'financialMissed',
+                question: 'Where have I missed opportunities or made financial mistakes?',
+                type: 'self',
               },
               {
-                id: "impact",
-                question: "What kinds of impact have I made that truly mattered to me?",
-                type: "both"
+                id: 'impact',
+                question: 'What kinds of impact have I made that truly mattered to me?',
+                type: 'both',
               },
               {
-                id: "indifference",
-                question: "What causes or outcomes am I surprisingly indifferent to?",
-                type: "both"
-              }
+                id: 'indifference',
+                question: 'What causes or outcomes am I surprisingly indifferent to?',
+                type: 'both',
+              },
             ],
-            responseType: "ikigaiGrid",
-            groupSharing: true
+            responseType: 'ikigaiGrid',
+            groupSharing: true,
           },
           {
             order: 4,
-            type: "aiPrompt",
-            title: "Step Three: Best Life",
+            type: 'aiPrompt',
+            title: 'Step Three: Best Life',
             description: `Now, ask yourself: What does my Best Life look like?
 
 Write your Best Life statement in 1–2 sentences. Let it be bold and true, even if it scares you or feels far away. This is the start of your journey, not the final draft.`,
             prompts: [
               {
-                id: "best-life-1",
-                question: "Based on everything I've shared so far, can you help me describe my Best Life in a short paragraph?",
-                type: "ai"
+                id: 'best-life-1',
+                question:
+                  "Based on everything I've shared so far, can you help me describe my Best Life in a short paragraph?",
+                type: 'ai',
               },
               {
-                id: "best-life-2",
-                question: "If I fully lived into my passions, competencies, values, and purpose, what would my ideal life feel and look like?",
-                type: "ai"
+                id: 'best-life-2',
+                question:
+                  'If I fully lived into my passions, competencies, values, and purpose, what would my ideal life feel and look like?',
+                type: 'ai',
               },
               {
-                id: "best-life-3",
-                question: "What would a typical day in my Best Life include?",
-                type: "ai"
+                id: 'best-life-3',
+                question: 'What would a typical day in my Best Life include?',
+                type: 'ai',
               },
               {
-                id: "best-life-4",
-                question: "What kind of person am I in my Best Life?",
-                type: "ai"
+                id: 'best-life-4',
+                question: 'What kind of person am I in my Best Life?',
+                type: 'ai',
               },
               {
-                id: "best-life-5",
-                question: "Where am I living, what am I doing, and who am I becoming in my Best Life?",
-                type: "ai"
-              }
+                id: 'best-life-5',
+                question: 'Where am I living, what am I doing, and who am I becoming in my Best Life?',
+                type: 'ai',
+              },
             ],
             aiPrompts: [
               {
-                id: "best-life-synthesis",
-                title: "Best Life Synthesis",
-                prompt: "Based on all my reflections, help me write a clear, inspiring 1-2 sentence Best Life statement.",
-                expectedOutput: "A concise, personal Best Life vision statement"
-              }
+                id: 'best-life-synthesis',
+                title: 'Best Life Synthesis',
+                prompt:
+                  'Based on all my reflections, help me write a clear, inspiring 1-2 sentence Best Life statement.',
+                expectedOutput: 'A concise, personal Best Life vision statement',
+              },
             ],
-            responseType: "statement",
-            groupSharing: true
-          }
-        ]
-      }
+            responseType: 'statement',
+            groupSharing: true,
+          },
+        ],
+      },
     },
     include: {
-      steps: true
-    }
+      steps: true,
+    },
   });
 
   console.log(`Created exercise: ${nobleHumanExercise.name} with ${nobleHumanExercise.steps.length} steps`);
 
   const week2Exercise = await prisma.exercise.create({
     data: {
-      name: "Noble Truth One: All Humans Suffer (Dukkha)",
+      name: 'Noble Truth One: All Humans Suffer (Dukkha)',
       weekNumber: 2,
-      buddhismConcept: "Dukkha - The Truth of Suffering",
+      buddhismConcept: 'Dukkha - The Truth of Suffering',
       metadata: {
         totalSteps: 4,
         estimatedMinutes: 180,
         outcomes: [
-          "Understand your Family DNA Karma",
-          "Identify inherited patterns and traits",
-          "Explore childhood influences on current suffering",
-          "Discover what you need most for your best life"
-        ]
+          'Understand your Family DNA Karma',
+          'Identify inherited patterns and traits',
+          'Explore childhood influences on current suffering',
+          'Discover what you need most for your best life',
+        ],
       },
       steps: {
         create: [
           {
             order: 1,
-            type: "static",
-            title: "Dukkha Reflection Questions",
+            type: 'static',
+            title: 'Dukkha Reflection Questions',
             description: `Complete the six sections of reflection questions to explore your suffering and its origins.`,
             questionSet: {
-              title: "30 Dukkha Reflection Questions",
-              description: "Deep exploration of identity, inheritance, and suffering",
+              title: '30 Dukkha Reflection Questions',
+              description: 'Deep exploration of identity, inheritance, and suffering',
               questions: [
                 {
-                  id: "q1",
-                  section: "Opening Reflections – Identity and Inheritance",
+                  id: 'q1',
+                  section: 'Opening Reflections – Identity and Inheritance',
                   number: 1,
-                  question: "Out of your mother(s)/mother figure(s) and father(s)/father figure(s), whom do you most resemble in appearance and personality? What are their names and current ages?",
-                  type: "multiline"
+                  question:
+                    'Out of your mother(s)/mother figure(s) and father(s)/father figure(s), whom do you most resemble in appearance and personality? What are their names and current ages?',
+                  type: 'multiline',
                 },
                 {
-                  id: "q2",
-                  section: "Opening Reflections – Identity and Inheritance",
+                  id: 'q2',
+                  section: 'Opening Reflections – Identity and Inheritance',
                   number: 2,
-                  question: "What do you love about their physical or personality traits you inherited from them?",
-                  type: "multiline"
+                  question: 'What do you love about their physical or personality traits you inherited from them?',
+                  type: 'multiline',
                 },
                 {
-                  id: "q3",
-                  section: "Opening Reflections – Identity and Inheritance",
+                  id: 'q3',
+                  section: 'Opening Reflections – Identity and Inheritance',
                   number: 3,
-                  question: "What do you find challenging about the traits you inherited?",
-                  type: "multiline"
+                  question: 'What do you find challenging about the traits you inherited?',
+                  type: 'multiline',
                 },
                 {
-                  id: "q4",
-                  section: "Opening Reflections – Identity and Inheritance",
+                  id: 'q4',
+                  section: 'Opening Reflections – Identity and Inheritance',
                   number: 4,
-                  question: "How have those traits shaped the way you show up in the world?",
-                  type: "multiline"
+                  question: 'How have those traits shaped the way you show up in the world?',
+                  type: 'multiline',
                 },
                 {
-                  id: "q5",
-                  section: "Opening Reflections – Identity and Inheritance",
+                  id: 'q5',
+                  section: 'Opening Reflections – Identity and Inheritance',
                   number: 5,
-                  question: "How do others see you, and how is that different from how you see yourself?",
-                  type: "multiline"
-                }
-              ]
+                  question: 'How do others see you, and how is that different from how you see yourself?',
+                  type: 'multiline',
+                },
+              ],
             },
-            responseType: "questionnaire",
-            groupSharing: false
+            responseType: 'questionnaire',
+            groupSharing: false,
           },
           {
             order: 2,
-            type: "static",
-            title: "Family Patterns Analysis",
+            type: 'static',
+            title: 'Family Patterns Analysis',
             description: `Synthesize what you've uncovered about your family patterns and identify your positive and negative drivers.`,
             instructionSections: [
               {
-                id: "family-resemblance",
-                title: "Family Resemblance",
-                content: "Share whom you most resemble from your family (mother, father, grandparents), physically, then in personality traits.",
-                order: 1
+                id: 'family-resemblance',
+                title: 'Family Resemblance',
+                content:
+                  'Share whom you most resemble from your family (mother, father, grandparents), physically, then in personality traits.',
+                order: 1,
               },
               {
-                id: "drivers",
-                title: "Positive and Negative Drivers",
-                content: "Identify your positive and negative drivers, and reflect on where they originated.",
-                order: 2
-              }
+                id: 'drivers',
+                title: 'Positive and Negative Drivers',
+                content: 'Identify your positive and negative drivers, and reflect on where they originated.',
+                order: 2,
+              },
             ],
-            responseType: "text",
-            groupSharing: true
+            responseType: 'text',
+            groupSharing: true,
           },
           {
             order: 3,
-            type: "aiPrompt",
-            title: "Personal Dukkha Narrative",
+            type: 'aiPrompt',
+            title: 'Personal Dukkha Narrative',
             description: `Write a short narrative (1–2 paragraphs) that expresses your personal Dukkha, the deep patterns, beliefs, or emotional burdens that have quietly shaped your life.`,
             prompts: [
               {
-                id: "negative-drivers",
-                question: "What negative drivers have fueled your success but are no longer serving you?",
-                type: "self"
+                id: 'negative-drivers',
+                question: 'What negative drivers have fueled your success but are no longer serving you?',
+                type: 'self',
               },
               {
-                id: "emotional-wounds",
-                question: "What emotional wounds or inherited patterns have held you back from living your best, most authentic life filled with joy?",
-                type: "self"
+                id: 'emotional-wounds',
+                question:
+                  'What emotional wounds or inherited patterns have held you back from living your best, most authentic life filled with joy?',
+                type: 'self',
               },
               {
-                id: "sacrifices",
-                question: "Where have you sacrificed peace, freedom, or joy in pursuit of achievement or approval?",
-                type: "self"
-              }
+                id: 'sacrifices',
+                question: 'Where have you sacrificed peace, freedom, or joy in pursuit of achievement or approval?',
+                type: 'self',
+              },
             ],
-            responseType: "narrative",
-            groupSharing: true
+            responseType: 'narrative',
+            groupSharing: true,
           },
           {
             order: 4,
-            type: "static",
-            title: "Most Important Feeling",
+            type: 'static',
+            title: 'Most Important Feeling',
             description: `Share Question 30 and why: What is the most important feeling (freedom, peace, joy, safety, etc) that you personally need to live your best life for yourself, before your family, children, or anyone else?`,
             prompts: [
               {
-                id: "important-feeling",
-                question: "What is the most important feeling you need to live your best life?",
-                type: "self",
-                helpText: "Choose from: freedom, peace, joy, safety, or another feeling that resonates"
-              }
+                id: 'important-feeling',
+                question: 'What is the most important feeling you need to live your best life?',
+                type: 'self',
+                helpText: 'Choose from: freedom, peace, joy, safety, or another feeling that resonates',
+              },
             ],
-            responseType: "shortPhrase",
-            groupSharing: true
-          }
-        ]
-      }
-    }
+            responseType: 'shortPhrase',
+            groupSharing: true,
+          },
+        ],
+      },
+    },
   });
 
   console.log(`Created exercise: ${week2Exercise.name}`);
 
-  console.log("Seeding completed successfully!");
+  console.log('Seeding completed successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error("Error seeding database:", e);
+    console.error('Error seeding database:', e);
     process.exit(1);
   })
   .finally(async () => {
