@@ -56,6 +56,9 @@ export default function Index() {
               {user ? (
                 <>
                   <span className="text-sm text-gray-600 py-2">Welcome, {user.email}</span>
+                  <Link to="/profile" className="text-sm text-indigo-600 hover:text-indigo-700 py-2">
+                    Profile
+                  </Link>
                   <form method="post" action="/logout">
                     <button type="submit" className="text-sm text-gray-500 hover:text-gray-700">
                       Logout

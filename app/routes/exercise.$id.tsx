@@ -67,7 +67,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   const completedStepIds = completion.steps.filter((s) => s.completed).map((s) => s.exerciseStepId);
-  
+
   let currentStepIndex: number;
   if (stepParam !== null) {
     const requestedIndex = parseInt(stepParam, 10);
@@ -113,7 +113,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const action = formData.get('_action') as string;
   const stepId = formData.get('stepId') as string;
   const responseType = formData.get('responseType') as string;
-  
+
   if (action === 'navigate') {
     const targetStep = formData.get('targetStep') as string;
     return redirect(`/exercise/${exerciseId}?step=${targetStep}`);
@@ -238,25 +238,27 @@ export async function action({ request, params }: ActionFunctionArgs) {
   });
 
   const completedStepIds = updatedCompletion?.steps.filter((s) => s.completed).map((s) => s.exerciseStepId) || [];
-  const currentStepIndex = currentStepParam ? parseInt(currentStepParam, 10) : exercise.steps.findIndex((s) => s.id === stepId);
+  const currentStepIndex = currentStepParam
+    ? parseInt(currentStepParam, 10)
+    : exercise.steps.findIndex((s) => s.id === stepId);
   const allStepsCompleted = completedStepIds.length === exercise.steps.length;
-  
+
   // If all steps are completed, stay on the current step to allow further edits
   if (allStepsCompleted) {
     return redirect(`/exercise/${exerciseId}?step=${currentStepIndex}`);
   }
-  
+
   // Find the next incomplete step
   const nextIncompleteIndex = exercise.steps.findIndex(
     (step, index) => index > currentStepIndex && !completedStepIds.includes(step.id)
   );
-  
+
   if (nextIncompleteIndex !== -1) {
     return redirect(`/exercise/${exerciseId}?step=${nextIncompleteIndex}`);
   } else if (currentStepIndex < exercise.steps.length - 1) {
     return redirect(`/exercise/${exerciseId}?step=${currentStepIndex + 1}`);
   }
-  
+
   return redirect(`/exercise/${exerciseId}?step=${currentStepIndex}`);
 }
 
@@ -408,7 +410,10 @@ export default function Exercise() {
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                role="img"
+                aria-label="Completed"
               >
+                <title>Completed</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -446,12 +451,12 @@ export default function Exercise() {
             </span>
             <span>{Math.round((completedStepIds.length / exercise.steps.length) * 100)}% Complete</span>
           </div>
-          
+
           <div className="flex gap-2 mb-4">
             {exercise.steps.map((step, index) => {
               const isActive = index === currentStepIndex;
               const isComplete = completedStepIds.includes(step.id);
-              
+
               return (
                 <Form key={step.id} method="post" className="flex-1">
                   <input type="hidden" name="_action" value="navigate" />
@@ -460,9 +465,13 @@ export default function Exercise() {
                     type="submit"
                     className={`
                       w-full py-2 px-3 text-xs font-medium rounded-md transition-colors
-                      ${isActive ? 'bg-indigo-600 text-white' : 
-                        isComplete ? 'bg-green-100 text-green-800 hover:bg-green-200' : 
-                        'bg-gray-100 text-gray-600 hover:bg-gray-200'}
+                      ${
+                        isActive
+                          ? 'bg-indigo-600 text-white'
+                          : isComplete
+                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }
                     `}
                     title={step.title}
                   >
@@ -472,7 +481,7 @@ export default function Exercise() {
               );
             })}
           </div>
-          
+
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
@@ -525,15 +534,18 @@ export default function Exercise() {
                       </button>
                     </Form>
                   )}
-                  
+
                   <button
                     type="submit"
                     className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
-                    {isCompleted ? 'Update Response' :
-                     completedStepIds.includes(currentStep.id) ? 'Update & Continue' : 
-                     isLastStep && completedStepIds.length === exercise.steps.length - 1 ? 'Complete Exercise' : 
-                     'Save & Next'}
+                    {isCompleted
+                      ? 'Update Response'
+                      : completedStepIds.includes(currentStep.id)
+                        ? 'Update & Continue'
+                        : isLastStep && completedStepIds.length === exercise.steps.length - 1
+                          ? 'Complete Exercise'
+                          : 'Save & Next'}
                   </button>
                 </div>
               </div>
