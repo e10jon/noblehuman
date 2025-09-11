@@ -38,3 +38,5 @@
 - If a feature **isn't** mentioned in the requirements, it shouldn't be in the
   code
 - Prioritize brevity and minimalism over robustness
+- After code changes, run `npm run typecheck && npm run check` until they both
+  pass
