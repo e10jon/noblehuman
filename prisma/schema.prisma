@@ -25,18 +25,23 @@ model User {
   /// [UserData]
   data     Json
 
-  exercises UserExercise[]
+  completions Completion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Exercise {
-  id   String @id @default(ulid())
-  name String
+  id              String  @id @default(ulid())
+  name            String
+  weekNumber      Int?
+  buddhismConcept String?
+  pillarType      String?
+  /// [ExerciseMetadata]
+  metadata        Json?
 
-  steps         ExerciseStep[]
-  userExercises UserExercise[]
+  steps       ExerciseStep[]
+  completions Completion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -47,14 +52,42 @@ enum ExerciseStepType {
   aiPrompt
 }
 
-model ExerciseStep {
-  id         String           @id @default(ulid())
-  exerciseId String
-  order      Int
-  type       ExerciseStepType
+enum ResponseType {
+  text
+  shortPhrase
+  statement
+  ikigaiGrid
+  multiPrompt
+  questionnaire
+  categorization
+  narrative
+  pillars
+}
 
-  exercise          Exercise           @relation(fields: [exerciseId], references: [id])
-  userExerciseSteps UserExerciseStep[]
+model ExerciseStep {
+  id                  String           @id @default(ulid())
+  exerciseId          String
+  order               Int
+  type                ExerciseStepType
+  title               String           @default("Step")
+  description         String           @default("") @db.Text
+  /// [ExercisePrompts]
+  prompts             Json?
+  /// [QuestionSet]
+  questionSet         Json?
+  /// [WorksheetTemplates]
+  worksheetTemplates  Json?
+  /// [InstructionSections]
+  instructionSections Json?
+  /// [Resources]
+  resources           Json?
+  /// [AIPrompts]
+  aiPrompts           Json?
+  responseType        ResponseType     @default(text)
+  groupSharing        Boolean          @default(false)
+
+  exercise Exercise         @relation(fields: [exerciseId], references: [id])
+  steps    CompletionStep[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -62,14 +95,14 @@ model ExerciseStep {
   @@index([exerciseId])
 }
 
-model UserExercise {
+model Completion {
   id         String @id @default(ulid())
   userId     String
   exerciseId String
 
-  user              User               @relation(fields: [userId], references: [id])
-  exercise          Exercise           @relation(fields: [exerciseId], references: [id])
-  userExerciseSteps UserExerciseStep[]
+  user     User             @relation(fields: [userId], references: [id])
+  exercise Exercise         @relation(fields: [exerciseId], references: [id])
+  steps    CompletionStep[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -78,17 +111,20 @@ model UserExercise {
   @@index([exerciseId])
 }
 
-model UserExerciseStep {
-  id             String @id @default(ulid())
+model CompletionStep {
+  id             String  @id @default(ulid())
   exerciseStepId String
-  userExerciseId String
+  completionId   String
+  /// [StepResponses]
+  responses      Json?
+  completed      Boolean @default(false)
 
-  userExercise UserExercise @relation(fields: [userExerciseId], references: [id])
+  completion   Completion   @relation(fields: [completionId], references: [id])
   exerciseStep ExerciseStep @relation(fields: [exerciseStepId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userExerciseId])
+  @@index([completionId])
   @@index([exerciseStepId])
 }
