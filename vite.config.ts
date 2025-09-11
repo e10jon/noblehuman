@@ -1,9 +1,9 @@
+import { reactRouter } from '@react-router/dev/vite';
 import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [reactRouter(), tailwindcss()],
   server: {
     port: 3000,
     open: true,

@@ -37,7 +37,8 @@
       "suspicious": {
         "noExplicitAny": "error",
         "noDebugger": "error",
-        "noArrayIndexKey": "error"
+        "noArrayIndexKey": "error",
+        "noUnknownAtRules": "off"
       },
       "style": {
         "noNonNullAssertion": "error",
