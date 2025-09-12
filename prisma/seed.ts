@@ -39,15 +39,10 @@ The Buddha, after years of spiritual searching and contemplation, reached a core
 Suffering, dukkha, is part of every life, from physical pain to emotional wounds, from longing to loss, from uncertainty to impermanence. The Buddha didn't just theorize this. He observed it, lived it, and understood that until we acknowledge suffering, we can't transcend it.
 
 So we begin here, with honesty and explore your hidden suffering.`,
-            prompts: [
-              {
-                id: 'suffering-1',
-                question:
-                  'Knowing what you know about me, what do you think are the sufferings I carry quietly or subconsciously?',
-                type: 'ai',
-                helpText: 'Let the AI reflect on patterns it has observed about you',
-              },
-            ],
+            conversationConfig: {
+              initialPrompt:
+                'Knowing what you know about me, what do you think are the sufferings I carry quietly or subconsciously?',
+            },
             responseType: 'multiPrompt',
             groupSharing: false,
           },
@@ -60,20 +55,9 @@ So we begin here, with honesty and explore your hidden suffering.`,
 After reflecting on the answers about your suffering, let's inquire further about what you truly need.
 
 Ask slowly - maybe one at a time. Let the response sit with you. You can engage the AI in further inquiry if something feels true, unclear, or revealing. Don't be afraid to press deeper. You may want to journal, meditate, or discuss it with your loved ones, friends or colleagues who can help you inquire further. This is an awareness practice.`,
-            prompts: [
-              {
-                id: 'desires-1',
-                question: 'What do I need more of to live my best life?',
-                type: 'both',
-                helpText: 'Consider both internal and external needs',
-              },
-              {
-                id: 'desires-2',
-                question: 'What do I need less of to live my best life?',
-                type: 'both',
-                helpText: "What's weighing you down or holding you back?",
-              },
-            ],
+            conversationConfig: {
+              initialPrompt: 'What do I need more of to live my best life? What do I need less of?',
+            },
             responseType: 'multiPrompt',
             groupSharing: false,
           },
@@ -88,48 +72,6 @@ For further inquiry, I always like to look at both sides of the coin, the light 
 For each of the four pairs below, I encourage you to ask AI or close friends so that you are not just thinking in an echo chamber alone. Reflect and journal by hand if possible. Let yourself go beyond the obvious. It's a good exercise to do as often as needed.
 
 Please write your thoughts freely first. Then, once you've gathered your raw reflections, synthesize your insights into 1–3 words or a short phrase for each column.`,
-            prompts: [
-              {
-                id: 'passion',
-                question: "What are the things I've always loved doing?",
-                type: 'both',
-              },
-              {
-                id: 'dislikes',
-                question: 'What activities or tasks consistently drain me or frustrate me?',
-                type: 'both',
-              },
-              {
-                id: 'competency',
-                question: 'Where do I naturally excel at and I am so good that I am a league of my own?',
-                type: 'both',
-              },
-              {
-                id: 'ineptitude',
-                question: 'Where do I consistently fall short, struggle, or feel clumsy?',
-                type: 'both',
-              },
-              {
-                id: 'financialSuccess',
-                question: 'Where and how have I successfully made money in the past?',
-                type: 'self',
-              },
-              {
-                id: 'financialMissed',
-                question: 'Where have I missed opportunities or made financial mistakes?',
-                type: 'self',
-              },
-              {
-                id: 'impact',
-                question: 'What kinds of impact have I made that truly mattered to me?',
-                type: 'both',
-              },
-              {
-                id: 'indifference',
-                question: 'What causes or outcomes am I surprisingly indifferent to?',
-                type: 'both',
-              },
-            ],
             responseType: 'ikigaiGrid',
             groupSharing: true,
           },
@@ -140,44 +82,10 @@ Please write your thoughts freely first. Then, once you've gathered your raw ref
             description: `Now, ask yourself: What does my Best Life look like?
 
 Write your Best Life statement in 1–2 sentences. Let it be bold and true, even if it scares you or feels far away. This is the start of your journey, not the final draft.`,
-            prompts: [
-              {
-                id: 'best-life-1',
-                question:
-                  "Based on everything I've shared so far, can you help me describe my Best Life in a short paragraph?",
-                type: 'ai',
-              },
-              {
-                id: 'best-life-2',
-                question:
-                  'If I fully lived into my passions, competencies, values, and purpose, what would my ideal life feel and look like?',
-                type: 'ai',
-              },
-              {
-                id: 'best-life-3',
-                question: 'What would a typical day in my Best Life include?',
-                type: 'ai',
-              },
-              {
-                id: 'best-life-4',
-                question: 'What kind of person am I in my Best Life?',
-                type: 'ai',
-              },
-              {
-                id: 'best-life-5',
-                question: 'Where am I living, what am I doing, and who am I becoming in my Best Life?',
-                type: 'ai',
-              },
-            ],
-            aiPrompts: [
-              {
-                id: 'best-life-synthesis',
-                title: 'Best Life Synthesis',
-                prompt:
-                  'Based on all my reflections, help me write a clear, inspiring 1-2 sentence Best Life statement.',
-                expectedOutput: 'A concise, personal Best Life vision statement',
-              },
-            ],
+            conversationConfig: {
+              initialPrompt:
+                "Based on everything I've shared so far, can you help me describe my Best Life? If I fully lived into my passions, competencies, values, and purpose, what would my ideal life feel and look like? What would a typical day include? What kind of person am I? Where am I living, what am I doing, and who am I becoming?",
+            },
             responseType: 'statement',
             groupSharing: true,
           },
@@ -286,24 +194,10 @@ Write your Best Life statement in 1–2 sentences. Let it be bold and true, even
             type: 'aiPrompt',
             title: 'Personal Dukkha Narrative',
             description: `Write a short narrative (1–2 paragraphs) that expresses your personal Dukkha, the deep patterns, beliefs, or emotional burdens that have quietly shaped your life.`,
-            prompts: [
-              {
-                id: 'negative-drivers',
-                question: 'What negative drivers have fueled your success but are no longer serving you?',
-                type: 'self',
-              },
-              {
-                id: 'emotional-wounds',
-                question:
-                  'What emotional wounds or inherited patterns have held you back from living your best, most authentic life filled with joy?',
-                type: 'self',
-              },
-              {
-                id: 'sacrifices',
-                question: 'Where have you sacrificed peace, freedom, or joy in pursuit of achievement or approval?',
-                type: 'self',
-              },
-            ],
+            conversationConfig: {
+              initialPrompt:
+                'What negative drivers have fueled your success but are no longer serving you? What emotional wounds or inherited patterns have held you back from living your best, most authentic life filled with joy? Where have you sacrificed peace, freedom, or joy in pursuit of achievement or approval?',
+            },
             responseType: 'narrative',
             groupSharing: true,
           },
@@ -312,14 +206,10 @@ Write your Best Life statement in 1–2 sentences. Let it be bold and true, even
             type: 'static',
             title: 'Most Important Feeling',
             description: `Share Question 30 and why: What is the most important feeling (freedom, peace, joy, safety, etc) that you personally need to live your best life for yourself, before your family, children, or anyone else?`,
-            prompts: [
-              {
-                id: 'important-feeling',
-                question: 'What is the most important feeling you need to live your best life?',
-                type: 'self',
-                helpText: 'Choose from: freedom, peace, joy, safety, or another feeling that resonates',
-              },
-            ],
+            conversationConfig: {
+              initialPrompt:
+                'What is the most important feeling you need to live your best life? Choose from: freedom, peace, joy, safety, or another feeling that resonates.',
+            },
             responseType: 'shortPhrase',
             groupSharing: true,
           },

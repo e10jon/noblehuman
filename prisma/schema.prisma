@@ -60,6 +60,12 @@ enum ResponseType {
   pillars
 }
 
+enum MessageRole {
+  user
+  assistant
+  system
+}
+
 model ExerciseStep {
   id                  String           @id @default(ulid())
   exerciseId          String
@@ -67,8 +73,8 @@ model ExerciseStep {
   type                ExerciseStepType
   title               String           @default("Step")
   description         String           @default("") @db.Text
-  /// [ExercisePrompts]
-  prompts             Json?
+  /// [ConversationConfig]
+  conversationConfig  Json?
   /// [QuestionSet]
   questionSet         Json?
   /// [WorksheetTemplates]
@@ -77,8 +83,6 @@ model ExerciseStep {
   instructionSections Json?
   /// [Resources]
   resources           Json?
-  /// [AIPrompts]
-  aiPrompts           Json?
   responseType        ResponseType     @default(text)
   groupSharing        Boolean          @default(false)
 
@@ -115,12 +119,26 @@ model CompletionStep {
   responses      Json?
   completed      Boolean @default(false)
 
-  completion   Completion   @relation(fields: [completionId], references: [id])
-  exerciseStep ExerciseStep @relation(fields: [exerciseStepId], references: [id])
+  completion   Completion            @relation(fields: [completionId], references: [id])
+  exerciseStep ExerciseStep          @relation(fields: [exerciseStepId], references: [id])
+  messages     ConversationMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([completionId])
   @@index([exerciseStepId])
+}
+
+model ConversationMessage {
+  id               String      @id @default(ulid())
+  completionStepId String
+  role             MessageRole
+  content          String
+
+  completionStep CompletionStep @relation(fields: [completionStepId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([completionStepId])
 }

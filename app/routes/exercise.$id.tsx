@@ -185,7 +185,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 interface StepWithPrompts {
-  prompts?: PrismaJson.ExercisePrompts | null;
+  conversationConfig?: PrismaJson.ConversationConfig | null;
   id: string;
   title: string;
   description: string;
@@ -194,7 +194,6 @@ interface StepWithPrompts {
   questionSet?: PrismaJson.QuestionSet | null;
   worksheetTemplates?: PrismaJson.WorksheetTemplates | null;
   resources?: PrismaJson.Resources | null;
-  aiPrompts?: PrismaJson.AIPrompts | null;
 }
 
 function TextResponseForm({ step, onSubmit }: { step: StepWithPrompts; onSubmit: (data: StepResponse) => void }) {
@@ -205,25 +204,22 @@ function TextResponseForm({ step, onSubmit }: { step: StepWithPrompts; onSubmit:
   } = useForm({
     resolver: zodResolver(textResponseSchema),
   });
-  const prompts = step.prompts || [];
+  const conversationConfig = step.conversationConfig;
   const textareaId = useId();
 
   return (
     <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-4">
-      {prompts.length > 0 ? (
+      {conversationConfig ? (
         <>
-          {prompts.map((prompt) => (
-            <div key={prompt.id}>
-              <label htmlFor={textareaId} className="block text-sm font-medium text-gray-700 mb-2">
-                {prompt.question}
-              </label>
-              {prompt.helpText && <p className="text-sm text-gray-500 mb-2">{prompt.helpText}</p>}
-            </div>
-          ))}
+          <div>
+            <label htmlFor={textareaId} className="block text-sm font-medium text-gray-700 mb-2">
+              {conversationConfig.initialPrompt}
+            </label>
+          </div>
           <textarea
             id={textareaId}
             {...register('content')}
-            placeholder={prompts[0]?.placeholder}
+            placeholder="Type your response here..."
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
@@ -261,22 +257,21 @@ function ShortPhraseResponseForm({
   } = useForm({
     resolver: zodResolver(shortPhraseResponseSchema),
   });
-  const prompt = step.prompts?.[0];
+  const conversationConfig = step.conversationConfig;
   const inputId = 'short-phrase-input';
 
   return (
     <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-4">
-      {prompt && (
+      {conversationConfig && (
         <div>
           <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-2">
-            {prompt.question}
+            {conversationConfig.initialPrompt}
           </label>
-          {prompt.helpText && <p className="text-sm text-gray-500 mb-2">{prompt.helpText}</p>}
           <input
             id={inputId}
             {...register('content', { required: 'Response is required' })}
             type="text"
-            placeholder={prompt.placeholder}
+            placeholder="Type your phrase here..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
           {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content.message}</p>}
@@ -296,10 +291,9 @@ interface StepWithQuestionnaire {
   description: string;
   responseType: string;
   instructionSections?: PrismaJson.InstructionSections | null;
-  prompts?: PrismaJson.ExercisePrompts | null;
+  conversationConfig?: PrismaJson.ConversationConfig | null;
   worksheetTemplates?: PrismaJson.WorksheetTemplates | null;
   resources?: PrismaJson.Resources | null;
-  aiPrompts?: PrismaJson.AIPrompts | null;
 }
 
 function QuestionnaireResponseForm({

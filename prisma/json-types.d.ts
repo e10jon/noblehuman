@@ -12,15 +12,9 @@ declare global {
       outcomes?: string[];
     };
 
-    export type ExercisePrompt = {
-      id: string;
-      question: string;
-      type: 'ai' | 'self' | 'both';
-      placeholder?: string;
-      helpText?: string;
+    export type ConversationConfig = {
+      initialPrompt: string;
     };
-
-    export type ExercisePrompts = ExercisePrompt[];
 
     export type Question = {
       id: string;
@@ -69,16 +63,6 @@ declare global {
 
     export type Resources = Resource[];
 
-    export type AIPrompt = {
-      id: string;
-      title: string;
-      prompt: string;
-      variables?: string[];
-      expectedOutput?: string;
-    };
-
-    export type AIPrompts = AIPrompt[];
-
     export type TextResponse = {
       type: 'text';
       content: string;
@@ -120,6 +104,14 @@ declare global {
         promptId: string;
         question: string;
         answer: string;
+      }>;
+    };
+
+    export type ConversationResponse = {
+      type: 'conversation';
+      messages: Array<{
+        role: 'user' | 'assistant' | 'system';
+        content: string;
       }>;
     };
 
@@ -191,7 +183,8 @@ declare global {
       | QuestionnaireResponse
       | CategorizationResponse
       | NarrativeResponse
-      | PillarsResponse;
+      | PillarsResponse
+      | ConversationResponse;
   }
 }
 
