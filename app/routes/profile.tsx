@@ -1,8 +1,10 @@
-import { useId, useRef } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useFieldArray, useForm } from 'react-hook-form';
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { data, Form, Link, useActionData, useLoaderData } from 'react-router';
+import { data, Link, useActionData, useLoaderData } from 'react-router';
 import { requireUser } from '../lib/auth';
 import { prisma } from '../lib/db';
+import { type ProfileSchema, profileSchema } from '../schemas/profile';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Profile - Noble Human' }, { name: 'description', content: 'Manage your Noble Human profile' }];
@@ -18,17 +20,27 @@ export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
 
   const bio = formData.get('bio') as string;
-  const photos = formData.getAll('photos').filter((p) => p !== '') as string[];
   const urls = formData.getAll('urls').filter((u) => u !== '') as string[];
+
+  const result = profileSchema.safeParse({
+    bio: bio || '',
+    urls: urls.map((u) => ({ value: u })),
+  });
+
+  if (!result.success) {
+    const errors = result.error.issues;
+    return data({ error: errors[0]?.message || 'Invalid input' }, { status: 400 });
+  }
+
+  const validUrls = result.data.urls.filter((u) => u.value !== '').map((u) => u.value);
 
   try {
     await prisma.user.update({
       where: { id: user.id },
       data: {
         data: {
-          bio: bio || '',
-          photos,
-          urls,
+          bio: result.data.bio,
+          urls: validUrls,
         },
       },
     });
@@ -44,11 +56,44 @@ export default function Profile() {
   const actionData = useActionData<typeof action>();
   const userData = user.data as PrismaJson.UserData;
 
-  const bioId = useId();
-  const photosLabelId = useId();
-  const urlsLabelId = useId();
-  const photoIdCounter = useRef(0);
-  const urlIdCounter = useRef(0);
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { isSubmitting, errors },
+  } = useForm({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      bio: userData.bio,
+      urls: userData.urls.length ? userData.urls.map((u) => ({ value: u })) : [{ value: '' }],
+    },
+  });
+
+  const {
+    fields: urlFields,
+    append: appendUrl,
+    remove: removeUrl,
+  } = useFieldArray({
+    control,
+    name: 'urls',
+  });
+
+  const onSubmit = async (formData: ProfileSchema) => {
+    const submitData = new FormData();
+    submitData.append('bio', formData.bio);
+    for (const url of formData.urls) {
+      if (url.value) submitData.append('urls', url.value);
+    }
+
+    const response = await fetch('/profile', {
+      method: 'POST',
+      body: submitData,
+    });
+
+    if (!response.ok) {
+      console.error('Failed to update profile');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -67,77 +112,54 @@ export default function Profile() {
           </div>
 
           <div className="p-6">
-            <Form method="post" className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div>
-                <label htmlFor={bioId} className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Bio
+                  <textarea
+                    {...register('bio')}
+                    rows={4}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md mt-2"
+                    placeholder="Tell us about yourself..."
+                  />
                 </label>
-                <textarea
-                  id={bioId}
-                  name="bio"
-                  rows={4}
-                  defaultValue={userData.bio}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                  placeholder="Tell us about yourself..."
-                />
+                {errors.bio && <p className="mt-1 text-sm text-red-600">{errors.bio.message}</p>}
               </div>
 
               <fieldset>
-                <legend id={photosLabelId} className="block text-sm font-medium text-gray-700 mb-2">
-                  Photos
-                </legend>
+                <legend className="block text-sm font-medium text-gray-700 mb-2">Links</legend>
                 <div className="space-y-2">
-                  {userData.photos.map((photo) => {
-                    const photoKey = `photo-${photoIdCounter.current++}`;
-                    return (
-                      <input
-                        key={photoKey}
-                        type="url"
-                        name="photos"
-                        defaultValue={photo}
-                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        placeholder="https://example.com/photo.jpg"
-                        aria-label="Photo URL"
-                      />
-                    );
-                  })}
-                  <input
-                    type="url"
-                    name="photos"
-                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    placeholder="Add a new photo URL..."
-                    aria-label="Add new photo URL"
-                  />
-                </div>
-                <p className="mt-1 text-xs text-gray-500">Add URLs to your photos</p>
-              </fieldset>
-
-              <fieldset>
-                <legend id={urlsLabelId} className="block text-sm font-medium text-gray-700 mb-2">
-                  Links
-                </legend>
-                <div className="space-y-2">
-                  {userData.urls.map((url) => {
-                    const urlKey = `url-${urlIdCounter.current++}`;
-                    return (
-                      <input
-                        key={urlKey}
-                        type="url"
-                        name="urls"
-                        defaultValue={url}
-                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        placeholder="https://example.com"
-                        aria-label="Link URL"
-                      />
-                    );
-                  })}
-                  <input
-                    type="url"
-                    name="urls"
-                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    placeholder="Add a new link..."
-                    aria-label="Add new link URL"
-                  />
+                  {urlFields.map((field, index) => (
+                    <div key={field.id}>
+                      <div className="flex gap-2">
+                        <input
+                          {...register(`urls.${index}.value`)}
+                          type="url"
+                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          placeholder="https://example.com"
+                        />
+                        {urlFields.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeUrl(index)}
+                            className="px-3 py-1 text-sm text-red-600 hover:text-red-800"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      {errors.urls?.[index]?.value && (
+                        <p className="mt-1 text-sm text-red-600">{errors.urls[index]?.value?.message}</p>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => appendUrl({ value: '' })}
+                    className="text-sm text-indigo-600 hover:text-indigo-500"
+                  >
+                    + Add link
+                  </button>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">Add your personal or social media links</p>
               </fieldset>
@@ -165,12 +187,13 @@ export default function Profile() {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save Profile
+                  {isSubmitting ? 'Saving...' : 'Save Profile'}
                 </button>
               </div>
-            </Form>
+            </form>
           </div>
         </div>
       </div>

@@ -22,7 +22,6 @@ export async function createUser(email: string, password: string) {
       email,
       password: hashedPassword,
       data: {
-        photos: [],
         urls: [],
         bio: '',
       },
