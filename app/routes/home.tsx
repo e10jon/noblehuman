@@ -1,6 +1,5 @@
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
 import { Link, useLoaderData } from 'react-router';
-import { ExerciseCard } from '../components/ExerciseCard';
 import { getUserFromCookie } from '../lib/auth';
 import { prisma } from '../lib/db';
 
@@ -18,7 +17,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
         orderBy: { order: 'asc' },
       },
     },
-    orderBy: { weekNumber: 'asc' },
   });
 
   let completions = null;
@@ -39,12 +37,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function Index() {
-  const { exercises, completions, user } = useLoaderData<typeof loader>();
-
-  const getCompletionForExercise = (exerciseId: string) => {
-    if (!completions) return null;
-    return completions.find((c) => c.exerciseId === exerciseId);
-  };
+  const { exercises, user } = useLoaderData<typeof loader>();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -97,7 +90,7 @@ export default function Index() {
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {exercises.map((exercise) => (
-              <ExerciseCard key={exercise.id} exercise={exercise} completion={getCompletionForExercise(exercise.id)} />
+              <div key={exercise.id}>{exercise.name}</div>
             ))}
           </div>
 

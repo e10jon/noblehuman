@@ -28,36 +28,14 @@ model User {
 }
 
 model Exercise {
-  id              String  @id @default(ulid())
-  name            String
-  weekNumber      Int?
-  buddhismConcept String?
-  pillarType      String?
-  /// [ExerciseMetadata]
-  metadata        Json?
+  id   String @id @default(ulid())
+  name String
 
   steps       ExerciseStep[]
   completions Completion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-enum ExerciseStepType {
-  static
-  aiPrompt
-}
-
-enum ResponseType {
-  text
-  shortPhrase
-  statement
-  ikigaiGrid
-  multiPrompt
-  questionnaire
-  categorization
-  narrative
-  pillars
 }
 
 enum MessageRole {
@@ -67,24 +45,11 @@ enum MessageRole {
 }
 
 model ExerciseStep {
-  id                  String           @id @default(ulid())
-  exerciseId          String
-  order               Int
-  type                ExerciseStepType
-  title               String           @default("Step")
-  description         String           @default("") @db.Text
-  /// [ConversationConfig]
-  conversationConfig  Json?
-  /// [QuestionSet]
-  questionSet         Json?
-  /// [WorksheetTemplates]
-  worksheetTemplates  Json?
-  /// [InstructionSections]
-  instructionSections Json?
-  /// [Resources]
-  resources           Json?
-  responseType        ResponseType     @default(text)
-  groupSharing        Boolean          @default(false)
+  id         String @id @default(ulid())
+  exerciseId String
+  order      Int
+  /// [ExerciseStepContent]
+  content    Json
 
   exercise Exercise         @relation(fields: [exerciseId], references: [id])
   steps    CompletionStep[]
@@ -115,8 +80,7 @@ model CompletionStep {
   id             String  @id @default(ulid())
   exerciseStepId String
   completionId   String
-  /// [StepResponses]
-  responses      Json?
+  result         String?
   completed      Boolean @default(false)
 
   completion   Completion            @relation(fields: [completionId], references: [id])
