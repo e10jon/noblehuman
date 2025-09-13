@@ -30,10 +30,7 @@ export default function Conversation({ systemPrompt, initialUserPrompt }: Conver
       <div className="flex flex-col w-full max-w-md py-24 mx-auto space-y-4">
         {initialUserPrompt && (
           <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-            <div className="font-semibold mb-2 text-sm text-gray-600 dark:text-gray-400">Your message:</div>
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown>{initialUserPrompt}</ReactMarkdown>
-            </div>
+            <div className="prose prose-sm dark:prose-invert max-w-none">&ldquo;{initialUserPrompt}&rdquo;</div>
           </div>
         )}
         <button

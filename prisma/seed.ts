@@ -12,7 +12,7 @@ async function main() {
   // Create the self-reflection exercise
   const exercise = await prisma.exercise.create({
     data: {
-      name: "Dating Myself: The Most Interesting Person I've Just Met",
+      name: 'Best Life Exercise = Dating Myself + Ikigai',
       steps: {
         create: [
           {

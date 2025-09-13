@@ -1,7 +1,16 @@
+import { ChevronDown, LogOut, User } from 'lucide-react';
 import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { Link, useLoaderData } from 'react-router';
+import { Form, Link, useFetcher, useLoaderData } from 'react-router';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu';
 import { getUserFromCookie } from '../lib/auth';
 import { prisma } from '../lib/db';
 
@@ -40,37 +49,61 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function Index() {
   const { exercises, user } = useLoaderData<typeof loader>();
+  const fetcher = useFetcher();
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">Noble Human</h1>
-            <div className="flex gap-4 items-center">
+            <div className="flex gap-2 items-center">
               {user ? (
-                <>
-                  <span className="text-sm text-gray-600">Welcome, {user.email}</span>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to="/profile">Profile</Link>
-                  </Button>
-                  <form method="post" action="/logout">
-                    <Button type="submit" variant="ghost" size="sm">
-                      Logout
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      {user.email}
+                      <ChevronDown className="h-4 w-4" />
                     </Button>
-                  </form>
-                </>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center">
+                        <User className="mr-2 h-4 w-4" />
+                        Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        fetcher.submit(null, { method: 'post', action: '/logout' });
+                      }}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
-                <Button asChild>
-                  <Link to="/login">Login</Link>
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" asChild>
+                    <Link to="/login">Login</Link>
+                  </Button>
+                  <Button asChild>
+                    <Link to="/signup">Sign Up</Link>
+                  </Button>
+                </div>
               )}
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-5xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <Card className="mb-8">
             <CardHeader>

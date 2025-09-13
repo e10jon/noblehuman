@@ -46,12 +46,12 @@ export default function Exercise() {
                   {step.content?.blocks?.map((block, index) => (
                     <div key={`${step.id}-block-${index}`}>
                       {block.content && (
-                        <div className="text-gray-700 whitespace-pre-wrap mb-4">
+                        <div className="text-gray-700 mb-4 prose">
                           <ReactMarkdown>{block.content}</ReactMarkdown>
                         </div>
                       )}
                       {block.ai && (
-                        <div className="mt-4 border rounded-lg">
+                        <div className="my-6 border border-zinc-200 dark:border-zinc-800 rounded-lg">
                           <Conversation
                             systemPrompt={block.ai.systemPrompt}
                             initialUserPrompt={block.ai.initialUserPrompt}
