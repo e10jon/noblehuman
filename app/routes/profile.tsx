@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
-import { data, Link, useActionData, useLoaderData } from 'react-router';
+import { data, Link, useFetcher, useLoaderData } from 'react-router';
+import type { ActionSchema } from '~/schemas/action';
 import { requireUser } from '../lib/auth';
 import { prisma } from '../lib/db';
-import { type ProfileSchema, profileSchema } from '../schemas/profile';
+import { type UserData, userDataSchema } from '../schemas/user';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Profile - Noble Human' }, { name: 'description', content: 'Manage your Noble Human profile' }];
@@ -17,56 +19,36 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUser(request);
-  const formData = await request.formData();
-
-  const bio = formData.get('bio') as string;
-  const urls = formData.getAll('urls').filter((u) => u !== '') as string[];
-
-  const result = profileSchema.safeParse({
-    bio: bio || '',
-    urls: urls.map((u) => ({ value: u })),
-  });
-
-  if (!result.success) {
-    const errors = result.error.issues;
-    return data({ error: errors[0]?.message || 'Invalid input' }, { status: 400 });
-  }
-
-  const validUrls = result.data.urls.filter((u) => u.value !== '').map((u) => u.value);
 
   try {
+    const json = await request.json();
+    const parsed = userDataSchema.parse(json);
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        data: {
-          bio: result.data.bio,
-          urls: validUrls,
-        },
+        data: parsed,
       },
     });
 
-    return data({ success: 'Profile updated successfully!' }, { status: 200 });
+    return data({ success: 'Profile updated successfully!' } satisfies ActionSchema, { status: 200 });
   } catch {
-    return data({ error: 'Failed to update profile' }, { status: 400 });
+    return data({ error: 'Failed to update profile' } satisfies ActionSchema, { status: 400 });
   }
 }
 
 export default function Profile() {
   const { user } = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>();
-  const userData = user.data as PrismaJson.UserData;
+  const fetcher = useFetcher<ActionSchema>();
+  const [actionData, setActionData] = useState<ActionSchema | null>(null);
 
   const {
     register,
     control,
     handleSubmit,
     formState: { isSubmitting, errors },
-  } = useForm({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      bio: userData.bio,
-      urls: userData.urls.length ? userData.urls.map((u) => ({ value: u })) : [{ value: '' }],
-    },
+  } = useForm<UserData>({
+    resolver: zodResolver(userDataSchema),
+    defaultValues: user.data,
   });
 
   const {
@@ -78,22 +60,18 @@ export default function Profile() {
     name: 'urls',
   });
 
-  const onSubmit = async (formData: ProfileSchema) => {
-    const submitData = new FormData();
-    submitData.append('bio', formData.bio);
-    for (const url of formData.urls) {
-      if (url.value) submitData.append('urls', url.value);
-    }
-
-    const response = await fetch('/profile', {
+  const onSubmit = async (formData: UserData) => {
+    fetcher.submit(formData, {
       method: 'POST',
-      body: submitData,
+      encType: 'application/json',
     });
-
-    if (!response.ok) {
-      console.error('Failed to update profile');
-    }
   };
+
+  useEffect(() => {
+    if (fetcher.state === 'idle' && fetcher.data) {
+      setActionData(fetcher.data);
+    }
+  }, [fetcher.data, fetcher.state]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -112,7 +90,7 @@ export default function Profile() {
           </div>
 
           <div className="p-6">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <fetcher.Form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Bio
@@ -193,7 +171,7 @@ export default function Profile() {
                   {isSubmitting ? 'Saving...' : 'Save Profile'}
                 </button>
               </div>
-            </form>
+            </fetcher.Form>
           </div>
         </div>
       </div>
