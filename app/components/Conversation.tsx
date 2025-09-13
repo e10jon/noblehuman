@@ -1,6 +1,7 @@
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 interface ConversationProps {
   systemPrompt?: string;
@@ -26,7 +27,15 @@ export default function Conversation({ systemPrompt, initialUserPrompt }: Conver
 
   if (!conversationStarted) {
     return (
-      <div className="flex flex-col w-full max-w-md py-24 mx-auto">
+      <div className="flex flex-col w-full max-w-md py-24 mx-auto space-y-4">
+        {initialUserPrompt && (
+          <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
+            <div className="font-semibold mb-2 text-sm text-gray-600 dark:text-gray-400">Your message:</div>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown>{initialUserPrompt}</ReactMarkdown>
+            </div>
+          </div>
+        )}
         <button
           type="button"
           onClick={handleStartConversation}
@@ -39,33 +48,63 @@ export default function Conversation({ systemPrompt, initialUserPrompt }: Conver
   }
 
   return (
-    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
-      {messages.map((message) => (
-        <div key={message.id} className="whitespace-pre-wrap">
-          {message.role === 'user' ? 'User: ' : 'AI: '}
-          {message.parts.map((part, i) => {
-            if (part.type === 'text') {
-              return <span key={`${message.id}-${i}`}>{part.text}</span>;
-            }
-            return null;
-          })}
+    <div className="flex h-[500px] w-full">
+      <div className="flex-1 overflow-y-auto p-6 border-r border-zinc-200 dark:border-zinc-800">
+        <div className="max-w-2xl mx-auto">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`mb-4 p-4 rounded-lg ${
+                message.role === 'user' ? 'bg-blue-50 dark:bg-blue-950 ml-8' : 'bg-gray-50 dark:bg-gray-900 mr-8'
+              }`}
+            >
+              <div className="font-semibold mb-1">{message.role === 'user' ? 'You' : 'Assistant'}</div>
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                {message.parts.map((part, i) => {
+                  if (part.type === 'text') {
+                    return <ReactMarkdown key={`${message.id}-${i}`}>{part.text}</ReactMarkdown>;
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          sendMessage({ text: input });
-          setInput('');
-        }}
-      >
-        <input
-          className="dark:bg-zinc-900 w-full max-w-md p-2 mb-8 border border-zinc-300 dark:border-zinc-800 rounded shadow-xl"
-          value={input}
-          placeholder="Say something..."
-          onChange={(e) => setInput(e.target.value)}
-        />
-      </form>
+      <div className="w-1/3 min-w-[300px] max-w-md p-6 flex flex-col justify-center">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendMessage({ text: input });
+            setInput('');
+          }}
+          className="space-y-4"
+        >
+          <textarea
+            className="dark:bg-zinc-900 w-full p-4 border border-zinc-300 dark:border-zinc-800 rounded-lg shadow-sm resize-none h-32"
+            value={input}
+            placeholder="Type your message..."
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (input.trim()) {
+                  sendMessage({ text: input });
+                  setInput('');
+                }
+              }
+            }}
+          />
+          <button
+            type="submit"
+            className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+            disabled={!input.trim()}
+          >
+            Send
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

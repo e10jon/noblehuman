@@ -111,7 +111,13 @@ export default function Profile() {
                     <div key={field.id}>
                       <div className="flex gap-2">
                         <input
-                          {...register(`urls.${index}.value`)}
+                          {...register(`urls.${index}.description`)}
+                          type="text"
+                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          placeholder="Description"
+                        />
+                        <input
+                          {...register(`urls.${index}.url`)}
                           type="url"
                           className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                           placeholder="https://example.com"
@@ -126,14 +132,17 @@ export default function Profile() {
                           </button>
                         )}
                       </div>
-                      {errors.urls?.[index]?.value && (
-                        <p className="mt-1 text-sm text-red-600">{errors.urls[index]?.value?.message}</p>
+                      {errors.urls?.[index]?.description && (
+                        <p className="mt-1 text-sm text-red-600">{errors.urls[index]?.description?.message}</p>
+                      )}
+                      {errors.urls?.[index]?.url && (
+                        <p className="mt-1 text-sm text-red-600">{errors.urls[index]?.url?.message}</p>
                       )}
                     </div>
                   ))}
                   <button
                     type="button"
-                    onClick={() => appendUrl({ value: '' })}
+                    onClick={() => appendUrl({ description: '', url: '' })}
                     className="text-sm text-indigo-600 hover:text-indigo-500"
                   >
                     + Add link

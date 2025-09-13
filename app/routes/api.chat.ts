@@ -12,6 +12,9 @@ export const action = async ({ request }: { request: Request }) => {
     model: openai('gpt-4o'),
     system: createCompleteSystemPrompt({ user, supplementalSystemPrompt: systemPrompt }),
     messages: convertToModelMessages(messages),
+    tools: {
+      web_search: openai.tools.webSearch({}),
+    },
   });
 
   return result.toUIMessageStreamResponse();
@@ -31,7 +34,7 @@ const createCompleteSystemPrompt = ({
   }
 
   if (user.data.urls.length > 0) {
-    prompt += `\n\nThey have provided the following URLs. Please visit them to learn more about them:\n${user.data.urls.map((url) => url.value).join(', ')}.`;
+    prompt += `\n\nThey have provided the following URLs. Please visit them to learn more about them:\n${user.data.urls.map((url) => url.url).join(', ')}.`;
   }
 
   if (supplementalSystemPrompt) {

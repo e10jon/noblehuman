@@ -1,3 +1,4 @@
+import ReactMarkdown from 'react-markdown';
 import type { LoaderFunctionArgs } from 'react-router';
 import { useLoaderData } from 'react-router';
 import Conversation from '../components/Conversation';
@@ -34,9 +35,13 @@ export default function Exercise() {
                 <h3 className="text-lg font-semibold mb-2">Step {step.order}</h3>
                 {step.content?.blocks?.map((block, index) => (
                   <div key={`${step.id}-block-${index}`}>
-                    {block.content && <p className="text-gray-700 whitespace-pre-wrap mb-4">{block.content}</p>}
+                    {block.content && (
+                      <div className="text-gray-700 whitespace-pre-wrap mb-4">
+                        <ReactMarkdown>{block.content}</ReactMarkdown>
+                      </div>
+                    )}
                     {block.ai && (
-                      <div className="mt-4">
+                      <div className="mt-4 border">
                         <Conversation
                           systemPrompt={block.ai.systemPrompt}
                           initialUserPrompt={block.ai.initialUserPrompt}
