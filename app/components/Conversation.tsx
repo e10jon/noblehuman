@@ -2,9 +2,10 @@ import { useChat } from '@ai-sdk/react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { DefaultChatTransport } from 'ai';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '~/lib/utils';
+import { Button } from './ui/button';
 
 interface ConversationProps {
   systemPrompt?: string;
@@ -14,12 +15,20 @@ interface ConversationProps {
 export default function Conversation({ systemPrompt, initialUserPrompt }: ConversationProps) {
   const [conversationStarted, setConversationStarted] = useState(!initialUserPrompt);
   const [hasContent, setHasContent] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { messages, sendMessage } = useChat({
     transport: new DefaultChatTransport({
       body: { systemPrompt },
     }),
   });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: messages is required to trigger scroll on new messages
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -64,25 +73,25 @@ export default function Conversation({ systemPrompt, initialUserPrompt }: Conver
             <div className="prose dark:prose-invert max-w-none">&ldquo;{initialUserPrompt}&rdquo;</div>
           </div>
         )}
-        <button
+        <Button
           type="button"
           onClick={handleStartConversation}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         >
           Start Conversation
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col w-full">
-      <div className="flex-1 overflow-y-scroll p-4">
+    <div className="w-full">
+      <div ref={scrollContainerRef} className="overflow-y-scroll">
         <div className="h-[600px]">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={cn(`mb-4 p-4 rounded-lg`, {
+              className={cn(`m-4 p-4 rounded-lg`, {
                 'bg-blue-50 dark:bg-blue-950 ml-8': message.role === 'user',
                 'bg-gray-50 dark:bg-gray-900 mr-8': message.role === 'assistant',
               })}
