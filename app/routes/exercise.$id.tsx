@@ -28,7 +28,7 @@ export default function Exercise() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <div className="mb-6">
           <Button variant="link" asChild className="p-0">
             <Link to="/">← Back to exercises</Link>
@@ -38,7 +38,7 @@ export default function Exercise() {
         <div className="space-y-4">
           {exercise.steps.map((step) => {
             return (
-              <Card key={step.id}>
+              <Card key={step.id} className="mb-12">
                 <CardHeader>
                   <CardTitle>Step {step.order}</CardTitle>
                 </CardHeader>

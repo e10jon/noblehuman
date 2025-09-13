@@ -1,7 +1,10 @@
 import { useChat } from '@ai-sdk/react';
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
 import { DefaultChatTransport } from 'ai';
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { cn } from '~/lib/utils';
 
 interface ConversationProps {
   systemPrompt?: string;
@@ -9,13 +12,41 @@ interface ConversationProps {
 }
 
 export default function Conversation({ systemPrompt, initialUserPrompt }: ConversationProps) {
-  const [input, setInput] = useState('');
   const [conversationStarted, setConversationStarted] = useState(!initialUserPrompt);
+  const [hasContent, setHasContent] = useState(false);
 
   const { messages, sendMessage } = useChat({
     transport: new DefaultChatTransport({
       body: { systemPrompt },
     }),
+  });
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    extensions: [StarterKit],
+    content: '',
+    onUpdate: ({ editor }) => {
+      setHasContent(!!editor.getText().trim());
+    },
+    editorProps: {
+      attributes: {
+        class:
+          'prose max-w-none focus:outline-none dark:prose-invert min-h-[40px] max-h-[200px] overflow-y-auto py-2 px-4 dark:bg-zinc-900 w-full border border-zinc-300 dark:border-zinc-800 rounded-lg shadow-sm',
+      },
+      handleKeyDown: (_view, event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          const content = editor?.getText().trim();
+          if (content) {
+            sendMessage({ text: content });
+            editor?.commands.clearContent();
+            setHasContent(false);
+          }
+          return true;
+        }
+        return false;
+      },
+    },
   });
 
   const handleStartConversation = () => {
@@ -30,7 +61,7 @@ export default function Conversation({ systemPrompt, initialUserPrompt }: Conver
       <div className="flex flex-col w-full max-w-md py-24 mx-auto space-y-4">
         {initialUserPrompt && (
           <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-            <div className="prose prose-sm dark:prose-invert max-w-none">&ldquo;{initialUserPrompt}&rdquo;</div>
+            <div className="prose dark:prose-invert max-w-none">&ldquo;{initialUserPrompt}&rdquo;</div>
           </div>
         )}
         <button
@@ -45,18 +76,18 @@ export default function Conversation({ systemPrompt, initialUserPrompt }: Conver
   }
 
   return (
-    <div className="flex h-[500px] w-full">
-      <div className="flex-1 overflow-y-auto p-6 border-r border-zinc-200 dark:border-zinc-800">
-        <div className="max-w-2xl mx-auto">
+    <div className="flex flex-col w-full">
+      <div className="flex-1 overflow-y-scroll p-4">
+        <div className="h-[600px]">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`mb-4 p-4 rounded-lg ${
-                message.role === 'user' ? 'bg-blue-50 dark:bg-blue-950 ml-8' : 'bg-gray-50 dark:bg-gray-900 mr-8'
-              }`}
+              className={cn(`mb-4 p-4 rounded-lg`, {
+                'bg-blue-50 dark:bg-blue-950 ml-8': message.role === 'user',
+                'bg-gray-50 dark:bg-gray-900 mr-8': message.role === 'assistant',
+              })}
             >
-              <div className="font-semibold mb-1">{message.role === 'user' ? 'You' : 'Assistant'}</div>
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="prose dark:prose-invert max-w-none">
                 {message.parts.map((part, i) => {
                   if (part.type === 'text') {
                     return <ReactMarkdown key={`${message.id}-${i}`}>{part.text}</ReactMarkdown>;
@@ -69,34 +100,24 @@ export default function Conversation({ systemPrompt, initialUserPrompt }: Conver
         </div>
       </div>
 
-      <div className="w-1/3 min-w-[300px] max-w-md p-6 flex flex-col justify-center">
+      <div className="p-2 border-t border-zinc-200 dark:border-zinc-800">
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            sendMessage({ text: input });
-            setInput('');
+            const content = editor?.getText().trim();
+            if (content) {
+              sendMessage({ text: content });
+              editor?.commands.clearContent();
+              setHasContent(false);
+            }
           }}
-          className="space-y-4"
+          className="space-y-2"
         >
-          <textarea
-            className="dark:bg-zinc-900 w-full p-4 border border-zinc-300 dark:border-zinc-800 rounded-lg shadow-sm resize-none h-32"
-            value={input}
-            placeholder="Type your message..."
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (input.trim()) {
-                  sendMessage({ text: input });
-                  setInput('');
-                }
-              }
-            }}
-          />
+          <EditorContent editor={editor} />
           <button
             type="submit"
             className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
-            disabled={!input.trim()}
+            disabled={!hasContent}
           >
             Send
           </button>
