@@ -7,7 +7,7 @@ const SESSION_NAME = 'nh_session';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 1 week
 
 export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
+  return bcrypt.hash(password, 12);
 }
 
 export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {

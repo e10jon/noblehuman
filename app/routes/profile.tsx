@@ -3,6 +3,12 @@ import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
 import { data, Link, useFetcher, useLoaderData } from 'react-router';
+import { Alert, AlertDescription } from '~/components/ui/alert';
+import { Button } from '~/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '~/components/ui/form';
+import { Input } from '~/components/ui/input';
+import { Textarea } from '~/components/ui/textarea';
 import type { ActionSchema } from '~/schemas/action';
 import { requireUser } from '../lib/auth';
 import { prisma } from '../lib/db';
@@ -41,12 +47,7 @@ export default function Profile() {
   const fetcher = useFetcher<ActionSchema>();
   const [actionData, setActionData] = useState<ActionSchema | null>(null);
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    formState: { isSubmitting, errors },
-  } = useForm<UserData>({
+  const form = useForm<UserData>({
     resolver: zodResolver(userDataSchema),
     defaultValues: user.data,
   });
@@ -56,11 +57,11 @@ export default function Profile() {
     append: appendUrl,
     remove: removeUrl,
   } = useFieldArray({
-    control,
+    control: form.control,
     name: 'urls',
   });
 
-  const onSubmit = async (formData: UserData) => {
+  const onSubmit = (formData: UserData) => {
     fetcher.submit(formData, {
       method: 'POST',
       encType: 'application/json',
@@ -77,112 +78,106 @@ export default function Profile() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <Link to="/" className="text-indigo-600 hover:text-indigo-500 text-sm">
-            ← Back to home
-          </Link>
+          <Button variant="link" asChild className="p-0">
+            <Link to="/">← Back to home</Link>
+          </Button>
           <h1 className="mt-4 text-3xl font-bold text-gray-900">Your Profile</h1>
           <p className="mt-2 text-gray-600">{user.email}</p>
         </div>
 
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
-          </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <fetcher.Form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="bio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bio</FormLabel>
+                      <FormControl>
+                        <Textarea rows={4} placeholder="Tell us about yourself..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <div className="p-6">
-            <fetcher.Form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bio
-                  <textarea
-                    {...register('bio')}
-                    rows={4}
-                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md mt-2"
-                    placeholder="Tell us about yourself..."
-                  />
-                </label>
-                {errors.bio && <p className="mt-1 text-sm text-red-600">{errors.bio.message}</p>}
-              </div>
-
-              <fieldset>
-                <legend className="block text-sm font-medium text-gray-700 mb-2">Links</legend>
-                <div className="space-y-2">
-                  {urlFields.map((field, index) => (
-                    <div key={field.id}>
-                      <div className="flex gap-2">
-                        <input
-                          {...register(`urls.${index}.description`)}
-                          type="text"
-                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                          placeholder="Description"
-                        />
-                        <input
-                          {...register(`urls.${index}.url`)}
-                          type="url"
-                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                          placeholder="https://example.com"
-                        />
-                        {urlFields.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeUrl(index)}
-                            className="px-3 py-1 text-sm text-red-600 hover:text-red-800"
-                          >
-                            Remove
-                          </button>
-                        )}
+                <div className="space-y-4">
+                  <FormLabel>Links</FormLabel>
+                  <FormDescription>Add your personal or social media links</FormDescription>
+                  <div className="space-y-2">
+                    {urlFields.map((field, index) => (
+                      <div key={field.id} className="space-y-2">
+                        <div className="flex gap-2">
+                          <FormField
+                            control={form.control}
+                            name={`urls.${index}.description`}
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <FormControl>
+                                  <Input type="text" placeholder="Description" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`urls.${index}.url`}
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <FormControl>
+                                  <Input type="url" placeholder="https://example.com" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          {urlFields.length > 1 && (
+                            <Button type="button" variant="ghost" size="sm" onClick={() => removeUrl(index)}>
+                              Remove
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      {errors.urls?.[index]?.description && (
-                        <p className="mt-1 text-sm text-red-600">{errors.urls[index]?.description?.message}</p>
-                      )}
-                      {errors.urls?.[index]?.url && (
-                        <p className="mt-1 text-sm text-red-600">{errors.urls[index]?.url?.message}</p>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => appendUrl({ description: '', url: '' })}
-                    className="text-sm text-indigo-600 hover:text-indigo-500"
-                  >
-                    + Add link
-                  </button>
-                </div>
-                <p className="mt-1 text-xs text-gray-500">Add your personal or social media links</p>
-              </fieldset>
-
-              {actionData && 'success' in actionData && (
-                <div className="rounded-md bg-green-50 p-4">
-                  <div className="flex">
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-green-800">{actionData.success}</p>
-                    </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      onClick={() => appendUrl({ description: '', url: '' })}
+                      className="p-0"
+                    >
+                      + Add link
+                    </Button>
                   </div>
                 </div>
-              )}
 
-              {actionData && 'error' in actionData && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <div className="flex">
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-red-800">{actionData.error}</p>
-                    </div>
-                  </div>
+                {actionData && 'success' in actionData && (
+                  <Alert className="bg-green-50 border-green-200">
+                    <AlertDescription className="text-green-800">{actionData.success}</AlertDescription>
+                  </Alert>
+                )}
+
+                {actionData && 'error' in actionData && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{actionData.error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? 'Saving...' : 'Save Profile'}
+                  </Button>
                 </div>
-              )}
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? 'Saving...' : 'Save Profile'}
-                </button>
-              </div>
-            </fetcher.Form>
-          </div>
-        </div>
+              </fetcher.Form>
+            </Form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 import ReactMarkdown from 'react-markdown';
 import type { LoaderFunctionArgs } from 'react-router';
-import { useLoaderData } from 'react-router';
+import { Link, useLoaderData } from 'react-router';
+import { Button } from '~/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import Conversation from '../components/Conversation';
 import { prisma } from '../lib/db';
 
@@ -27,30 +29,39 @@ export default function Exercise() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <Button variant="link" asChild className="p-0">
+            <Link to="/">← Back to exercises</Link>
+          </Button>
+        </div>
         <h1 className="text-3xl font-bold mb-8">{exercise.name}</h1>
         <div className="space-y-4">
           {exercise.steps.map((step) => {
             return (
-              <div key={step.id} className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold mb-2">Step {step.order}</h3>
-                {step.content?.blocks?.map((block, index) => (
-                  <div key={`${step.id}-block-${index}`}>
-                    {block.content && (
-                      <div className="text-gray-700 whitespace-pre-wrap mb-4">
-                        <ReactMarkdown>{block.content}</ReactMarkdown>
-                      </div>
-                    )}
-                    {block.ai && (
-                      <div className="mt-4 border">
-                        <Conversation
-                          systemPrompt={block.ai.systemPrompt}
-                          initialUserPrompt={block.ai.initialUserPrompt}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <Card key={step.id}>
+                <CardHeader>
+                  <CardTitle>Step {step.order}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {step.content?.blocks?.map((block, index) => (
+                    <div key={`${step.id}-block-${index}`}>
+                      {block.content && (
+                        <div className="text-gray-700 whitespace-pre-wrap mb-4">
+                          <ReactMarkdown>{block.content}</ReactMarkdown>
+                        </div>
+                      )}
+                      {block.ai && (
+                        <div className="mt-4 border rounded-lg">
+                          <Conversation
+                            systemPrompt={block.ai.systemPrompt}
+                            initialUserPrompt={block.ai.initialUserPrompt}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             );
           })}
         </div>
