@@ -9,10 +9,10 @@ async function main() {
   await prisma.exerciseStep.deleteMany();
   await prisma.exercise.deleteMany();
 
-  // Create main exercise
+  // Create the self-reflection exercise
   const exercise = await prisma.exercise.create({
     data: {
-      name: 'Best Life Discovery Journey',
+      name: "Dating Myself: The Most Interesting Person I've Just Met",
       steps: {
         create: [
           {
@@ -28,13 +28,6 @@ Imagine you just met someone truly fascinating — wise, layered, scarred, accom
 
 Approach this exercise with tenderness, curiosity, and radical self-respect. This is not about fixing you. This is about witnessing you. Knowing yourself with the same compassion you would offer someone you deeply admire.`,
                 },
-              ],
-            },
-          },
-          {
-            order: 2,
-            content: {
-              blocks: [
                 {
                   content: `## Suffering
 
@@ -46,19 +39,10 @@ So we begin here, with honesty and explore your hidden suffering.`,
                 },
                 {
                   ai: {
-                    systemPrompt:
-                      'You are a compassionate guide helping someone explore their inner suffering with wisdom and care.',
-                    initialUserPrompt:
-                      'Knowing what you know about me, what do you think are the sufferings I carry quietly or subconsciously?',
+                    systemPrompt: `You are a compassionate guide helping someone explore their inner life with deep empathy and wisdom. Help them uncover hidden sufferings they may carry quietly or subconsciously. Be gentle, insightful, and create a safe space for self-reflection. Draw on what you know about human psychology and the universal patterns of suffering.`,
+                    initialUserPrompt: `Knowing what you know about me, what do you think are the sufferings I carry quietly or subconsciously?`,
                   },
                 },
-              ],
-            },
-          },
-          {
-            order: 3,
-            content: {
-              blocks: [
                 {
                   content: `## Desires
 
@@ -68,132 +52,72 @@ Ask it slowly - maybe one at a time. Let the response sit with you. You can enga
                 },
                 {
                   ai: {
-                    systemPrompt:
-                      'You are a thoughtful guide helping someone understand their deeper needs and desires.',
-                    initialUserPrompt: 'What do I need more of and what do I need less of to live my best life?',
+                    systemPrompt: `You are a wise mentor helping someone understand their deepest needs and desires. Guide them to identify what they need more of and what they need less of to live their best life. Be thoughtful, ask probing questions, and help them see patterns they might not notice themselves. Encourage deep reflection.`,
+                    initialUserPrompt: `What do I need more of and what do I need less of to live my best life?`,
                   },
                 },
               ],
             },
           },
           {
-            order: 4,
+            order: 2,
             content: {
               blocks: [
                 {
                   content: `# Step Two: Ikigai Expanded, Light and Shadow
 
-Before you answer the big question, "What does my Best Life look like?," it helps to think in the Ikigai framework. Ikigai is a Japanese concept of "purpose - a reason for being."
-
-It is often visualized as the intersection of four key areas: What you love, What you are good at, What you can be paid for, and What the world needs. When all four align, it creates a life of fulfillment, contribution, and clarity.
+Before you answer the big question, "What does my Best Life look like?," it helps to think in the Ikigai framework. Ikigai is a Japanese concept of "purpose - a reason for being." It is often visualized as the intersection of four key areas: What you love, What you are good at, What you can be paid for, and What the world needs. When all four align, it creates a life of fulfillment, contribution, and clarity.
 
 For further inquiry, I always like to look at both sides of the coin, the light and the shadow, because true alignment comes from full awareness.
 
 For each of the four pairs below, I encourage you to ask AI or close friends so that you are not just thinking in an echo chamber alone. Reflect and journal by hand if possible. Let yourself go beyond the obvious. It's a good exercise to do as often as needed.`,
                 },
-              ],
-            },
-          },
-          {
-            order: 5,
-            content: {
-              blocks: [
                 {
-                  content: `## 1. Passion / Dislikes
-
-Explore both what energizes you and what drains you:
-• What are the things I've always loved doing?
-• What activities or tasks consistently drain me or frustrate me?`,
+                  content: `## 1. Passion / Dislikes`,
                 },
                 {
                   ai: {
-                    systemPrompt: 'Help the user explore their passions and dislikes with depth and insight.',
-                    initialUserPrompt:
-                      "What are the things I've always loved doing? And what activities or tasks consistently drain me or frustrate me?",
+                    systemPrompt: `You are helping someone explore their passions and dislikes with depth and clarity. Guide them to identify not just surface-level interests but the deeper patterns of what truly energizes them and what consistently drains them. Help them see connections they might have missed.`,
+                    initialUserPrompt: `Help me explore: What are the things I've always loved doing? And what activities or tasks consistently drain me or frustrate me?`,
                   },
                 },
-              ],
-            },
-          },
-          {
-            order: 6,
-            content: {
-              blocks: [
                 {
-                  content: `## 2. Competency / Ineptitude
-
-Understand your natural strengths and persistent challenges:
-• Where do I naturally excel at and I am so good that I am a league of my own?
-• Where do I consistently fall short, struggle, or feel clumsy?`,
+                  content: `## 2. Competency / Ineptitude`,
                 },
                 {
                   ai: {
-                    systemPrompt: 'Guide the user in recognizing their unique competencies and areas of struggle.',
-                    initialUserPrompt:
-                      'Where do I naturally excel at and I am so good that I am a league of my own? Where do I consistently fall short, struggle, or feel clumsy?',
+                    systemPrompt: `You are helping someone identify their natural strengths and weaknesses with honesty and compassion. Guide them to recognize where they truly excel - perhaps even in ways they take for granted - and where they consistently struggle. Help them see these not as judgments but as valuable self-knowledge.`,
+                    initialUserPrompt: `Help me identify: Where do I naturally excel and am so good that I am in a league of my own? And where do I consistently fall short, struggle, or feel clumsy?`,
                   },
                 },
-              ],
-            },
-          },
-          {
-            order: 7,
-            content: {
-              blocks: [
                 {
-                  content: `## 3. $ Success / $ Missed
-
-Reflect on your financial patterns and opportunities:
-• Where and how have I successfully made money in the past?
-• Where have I missed opportunities or made financial mistakes?`,
+                  content: `## 3. $ Success / $ Missed`,
                 },
                 {
                   ai: {
-                    systemPrompt:
-                      'Help the user examine their financial successes and missed opportunities with clarity.',
-                    initialUserPrompt:
-                      'Where and how have I successfully made money in the past? Where have I missed opportunities or made financial mistakes?',
+                    systemPrompt: `You are helping someone reflect on their financial history with clarity and wisdom. Guide them to identify patterns in how they've successfully created value and earned money, as well as where they've missed opportunities or made mistakes. Help them see these experiences as learning rather than judgment.`,
+                    initialUserPrompt: `Help me reflect on: Where and how have I successfully made money in the past? And where have I missed opportunities or made financial mistakes?`,
                   },
                 },
-              ],
-            },
-          },
-          {
-            order: 8,
-            content: {
-              blocks: [
                 {
-                  content: `## 4. Impact / Indifference
-
-Consider where your efforts create meaning:
-• What kinds of impact have I made that truly mattered to me?
-• What causes or outcomes am I surprisingly indifferent to?`,
+                  content: `## 4. Impact / Indifference`,
                 },
                 {
                   ai: {
-                    systemPrompt:
-                      'Guide the user in understanding where they create meaningful impact and what they are indifferent to.',
-                    initialUserPrompt:
-                      'What kinds of impact have I made that truly mattered to me? What causes or outcomes am I surprisingly indifferent to?',
+                    systemPrompt: `You are helping someone understand their true values through the lens of impact. Guide them to identify what kinds of contributions have genuinely mattered to them and what they're surprisingly indifferent to. Help them distinguish between what they think should matter and what actually does.`,
+                    initialUserPrompt: `Help me understand: What kinds of impact have I made that truly mattered to me? And what causes or outcomes am I surprisingly indifferent to?`,
                   },
                 },
-              ],
-            },
-          },
-          {
-            order: 9,
-            content: {
-              blocks: [
                 {
                   content: `## Synthesis
 
-Please write your thoughts freely first. Then, once you've gathered your raw reflections, synthesize your insights into 1–3 words or a short phrase for each column in the worksheet. When you're ready, bring these insights to the group. Your vulnerability will create space for deeper and more meaningful dialogue.`,
+Please write your thoughts freely first. Then, once you've gathered your raw reflections, synthesize your insights into 1–3 words or a short phrase for each column. When you're ready, bring these insights to the next step. Your vulnerability will create space for deeper and more meaningful dialogue.`,
                 },
               ],
             },
           },
           {
-            order: 10,
+            order: 3,
             content: {
               blocks: [
                 {
@@ -205,30 +129,33 @@ Write your Best Life statement in 1–2 sentences. Let it be bold and true, even
                 },
                 {
                   ai: {
-                    systemPrompt:
-                      'You are helping someone articulate their vision of their Best Life based on all their previous reflections.',
-                    initialUserPrompt: `Based on everything I've shared so far, can you help me describe my Best Life in a short paragraph? Consider:
-- If I fully lived into my passions, competencies, values, and purpose, what would my ideal life feel and look like?
-- What would a typical day in my Best Life include?
-- What kind of person am I in my Best Life?
-- Where am I living, what am I doing, and who am I becoming in my Best Life?`,
+                    systemPrompt: `You are helping someone articulate their vision of their Best Life based on all the self-reflection they've done. Draw on their insights about suffering, desires, passions, competencies, financial patterns, and impact. Help them create a bold, authentic vision that integrates all these elements. Be encouraging and help them think big while staying true to themselves.`,
+                    initialUserPrompt: `Based on everything I've shared so far, can you help me describe my Best Life in a short paragraph?`,
                   },
                 },
-              ],
-            },
-          },
-          {
-            order: 11,
-            content: {
-              blocks: [
                 {
-                  content: `## Closing Thoughts
-
-I hope this exercise has been helpful for you. Please know that this is an invitation, not an obligation. If anything doesn't feel right for you, don't hesitate to adjust it to your needs.
-
-I also understand that everyone has a different comfort level when it comes to AI tools and privacy. Please use your own judgment and do what feels best for you.
-
-This is simply the beginning of your journey. I sincerely appreciate your trust in this process and look forward to seeing where it takes you.`,
+                  ai: {
+                    systemPrompt: `You are helping someone envision their Best Life in vivid detail. Help them imagine what it would feel like to fully live into their passions, competencies, values, and purpose. Make it tangible and inspiring.`,
+                    initialUserPrompt: `If I fully lived into my passions, competencies, values, and purpose, what would my ideal life feel and look like?`,
+                  },
+                },
+                {
+                  ai: {
+                    systemPrompt: `You are helping someone visualize a typical day in their Best Life. Help them imagine the details - the rhythms, activities, interactions, and feelings that would characterize their ideal life. Make it specific and grounded.`,
+                    initialUserPrompt: `What would a typical day in my Best Life include?`,
+                  },
+                },
+                {
+                  ai: {
+                    systemPrompt: `You are helping someone understand who they become in their Best Life. Help them articulate not just what they do but who they are - their qualities, presence, and way of being in the world when living fully aligned.`,
+                    initialUserPrompt: `What kind of person am I in my Best Life?`,
+                  },
+                },
+                {
+                  ai: {
+                    systemPrompt: `You are helping someone create a comprehensive vision of their Best Life. Help them integrate location, activities, and personal growth into a cohesive picture of their ideal future.`,
+                    initialUserPrompt: `Where am I living, what am I doing, and who am I becoming in my Best Life?`,
+                  },
                 },
               ],
             },
@@ -238,7 +165,7 @@ This is simply the beginning of your journey. I sincerely appreciate your trust 
     },
   });
 
-  console.log(`Created exercise: ${exercise.name} with ${11} steps`);
+  console.log(`Created exercise: ${exercise.name} with 3 steps`);
 
   console.log('Seeding completed successfully!');
 }

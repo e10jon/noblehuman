@@ -1,9 +1,42 @@
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 import { useState } from 'react';
 
-export default function Conversation() {
+interface ConversationProps {
+  systemPrompt?: string;
+  initialUserPrompt?: string;
+}
+
+export default function Conversation({ systemPrompt, initialUserPrompt }: ConversationProps) {
   const [input, setInput] = useState('');
-  const { messages, sendMessage } = useChat();
+  const [conversationStarted, setConversationStarted] = useState(!initialUserPrompt);
+
+  const { messages, sendMessage } = useChat({
+    transport: new DefaultChatTransport({
+      body: { systemPrompt },
+    }),
+  });
+
+  const handleStartConversation = () => {
+    setConversationStarted(true);
+    if (initialUserPrompt) {
+      sendMessage({ text: initialUserPrompt });
+    }
+  };
+
+  if (!conversationStarted) {
+    return (
+      <div className="flex flex-col w-full max-w-md py-24 mx-auto">
+        <button
+          type="button"
+          onClick={handleStartConversation}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        >
+          Start Conversation
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">

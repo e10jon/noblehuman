@@ -37,7 +37,10 @@ export default function Exercise() {
                     {block.content && <p className="text-gray-700 whitespace-pre-wrap mb-4">{block.content}</p>}
                     {block.ai && (
                       <div className="mt-4">
-                        <Conversation />
+                        <Conversation
+                          systemPrompt={block.ai.systemPrompt}
+                          initialUserPrompt={block.ai.initialUserPrompt}
+                        />
                       </div>
                     )}
                   </div>
