@@ -90,7 +90,11 @@ export default function Index() {
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {exercises.map((exercise) => (
-              <div key={exercise.id}>{exercise.name}</div>
+              <div key={exercise.id}>
+                <Link to={`/exercise/${exercise.id}`} className="text-indigo-600 hover:text-indigo-500">
+                  {exercise.name}
+                </Link>
+              </div>
             ))}
           </div>
 

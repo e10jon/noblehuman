@@ -6,4 +6,6 @@ export default [
   route('signup', './routes/signup.tsx'),
   route('logout', './routes/logout.tsx'),
   route('profile', './routes/profile.tsx'),
+  route('exercise/:id', './routes/exercise.$id.tsx'),
+  route('api/chat', './routes/api.chat.ts'),
 ] satisfies RouteConfig;
