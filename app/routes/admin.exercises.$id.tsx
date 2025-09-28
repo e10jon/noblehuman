@@ -228,29 +228,33 @@ function BlockDisplay({
       {block?.content && (
         <div>
           <div className="text-xs font-medium text-gray-600 mb-1">Content</div>
-          <div className="bg-gray-50 p-2 rounded text-xs whitespace-pre-wrap">{block.content}</div>
+          <div
+            className="bg-gray-50 p-2 rounded prose prose-sm max-w-full"
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: We trust this.
+            dangerouslySetInnerHTML={{ __html: block.content }}
+          />
         </div>
       )}
       {block?.ai?.systemPrompt && (
         <div>
           <div className="text-xs font-medium text-gray-600 mb-1">AI System Prompt</div>
-          <div className="bg-blue-50 p-2 rounded text-xs whitespace-pre-wrap">{block.ai.systemPrompt}</div>
+          <div className="bg-blue-50 p-2 rounded text-sm whitespace-pre-wrap">{block.ai.systemPrompt}</div>
         </div>
       )}
       {block?.ai?.initialUserPrompt && (
         <div>
           <div className="text-xs font-medium text-gray-600 mb-1">AI Initial User Prompt</div>
-          <div className="bg-green-50 p-2 rounded text-xs whitespace-pre-wrap">{block.ai.initialUserPrompt}</div>
+          <div className="bg-green-50 p-2 rounded text-sm whitespace-pre-wrap">{block.ai.initialUserPrompt}</div>
         </div>
       )}
       {block?.resultPrompt && (
         <div>
           <div className="text-xs font-medium text-gray-600 mb-1">Result Prompt</div>
-          <div className="bg-purple-50 p-2 rounded text-xs whitespace-pre-wrap">{block.resultPrompt}</div>
+          <div className="bg-purple-50 p-2 rounded text-sm whitespace-pre-wrap">{block.resultPrompt}</div>
         </div>
       )}
       {!(block?.content || block?.ai?.systemPrompt || block?.ai?.initialUserPrompt || block?.resultPrompt) && (
-        <div className="text-gray-400 text-xs italic">This block has no content. Click Edit to add content.</div>
+        <div className="text-gray-400 text-sm italic">This block has no content. Click Edit to add content.</div>
       )}
     </div>
   );
@@ -282,6 +286,7 @@ async function handleUpdateExercise(params: { id: string }, parsed: { name: stri
 async function handleAddStep(
   params: { id: string },
   parsed: {
+    title: string;
     blocks: Array<{ content?: string; systemPrompt?: string; initialUserPrompt?: string; resultPrompt?: string }>;
   }
 ) {
@@ -301,6 +306,7 @@ async function handleAddStep(
     data: {
       exerciseId: params.id,
       order: newOrder,
+      title: parsed.title,
       content: stepContent,
     },
   });
@@ -310,6 +316,7 @@ async function handleAddStep(
 
 async function handleUpdateStep(parsed: {
   stepId: string;
+  title: string;
   content?: string;
   systemPrompt?: string;
   initialUserPrompt?: string;
@@ -321,7 +328,7 @@ async function handleUpdateStep(parsed: {
 
   await prisma.exerciseStep.update({
     where: { id: parsed.stepId },
-    data: { content: stepContent },
+    data: { title: parsed.title, content: stepContent },
   });
 
   return data({ success: 'Step updated successfully!' } satisfies ActionSchema, { status: 200 });
@@ -565,12 +572,12 @@ function AddStepForm() {
 
   const form = useForm<AddStep>({
     resolver: zodResolver(addStepSchema),
-    defaultValues: { blocks: [{ content: '', systemPrompt: '', initialUserPrompt: '', resultPrompt: '' }] },
+    defaultValues: { title: '', blocks: [{ content: '', systemPrompt: '', initialUserPrompt: '', resultPrompt: '' }] },
   });
 
-  const onSubmit = (_formData: AddStep) => {
+  const onSubmit = (formData: AddStep) => {
     const cleanBlocks = blocks.map(({ id, ...block }) => block);
-    submit({ action: 'addStep', blocks: cleanBlocks });
+    submit({ action: 'addStep', title: formData.title, blocks: cleanBlocks });
     form.reset();
     setBlocks([{ id: crypto.randomUUID(), content: '', systemPrompt: '', initialUserPrompt: '', resultPrompt: '' }]);
   };
@@ -597,6 +604,19 @@ function AddStepForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Step Title *</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter step title..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <div className="space-y-6">
           {blocks.map((block, index) => (
             <div key={block.id} className="border rounded-lg p-4 space-y-4">
@@ -684,6 +704,7 @@ function EditStepForm({
 }: {
   step: {
     id: string;
+    title: string;
     content?: {
       blocks?: Array<{
         content?: string;
@@ -702,6 +723,7 @@ function EditStepForm({
     resolver: zodResolver(updateStepSchema),
     defaultValues: {
       stepId: step.id,
+      title: step.title,
       content: block?.content || '',
       systemPrompt: block?.ai?.systemPrompt || '',
       initialUserPrompt: block?.ai?.initialUserPrompt || '',
@@ -722,6 +744,19 @@ function EditStepForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Step Title *</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter step title..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <ContentField control={form.control} name="content" />
         <SystemPromptField control={form.control} name="systemPrompt" rows={3} />
         <InitialUserPromptField control={form.control} name="initialUserPrompt" />
@@ -923,9 +958,7 @@ export default function AdminExerciseEdit() {
               return (
                 <div key={step.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start mb-4">
-                    <h4 className="font-medium">
-                      Step {step.order} ({blocks.length} block{blocks.length !== 1 ? 's' : ''})
-                    </h4>
+                    <h4 className="font-medium">{step.title}</h4>
                     <div className="flex gap-2">
                       {!isEditing && (
                         <Button variant="outline" size="sm" onClick={() => setEditingStepId(step.id)}>
@@ -978,8 +1011,8 @@ export default function AdminExerciseEdit() {
                                 key={`${step.id}-block-${blockIndex}`}
                                 className="border border-gray-200 rounded p-3"
                               >
-                                <div className="flex justify-between items-center mb-3">
-                                  <h5 className="font-medium text-sm">Block {blockIndex + 1}</h5>
+                                <div className="flex justify-between items-start mb-3">
+                                  <h5 className="font-medium text-xs">Block {blockIndex + 1}</h5>
                                   <div className="flex gap-1">
                                     {!isEditingBlock && (
                                       <Button variant="outline" size="sm" onClick={() => setEditingBlockKey(blockKey)}>

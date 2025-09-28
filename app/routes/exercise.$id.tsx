@@ -125,7 +125,7 @@ export default function Exercise() {
             return (
               <Card key={step.id} className="mb-12">
                 <CardHeader>
-                  <CardTitle>Step {step.order}</CardTitle>
+                  <CardTitle>{step.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {step.content?.blocks?.map((block, index) => (

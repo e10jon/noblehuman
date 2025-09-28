@@ -48,11 +48,12 @@ enum MessageRole {
 model ExerciseStep {
   id         String @id @default(ulid())
   exerciseId String
+  title      String
   order      Int
   /// [ExerciseStepContent]
   content    Json
 
-  exercise Exercise         @relation(fields: [exerciseId], references: [id])
+  exercise Exercise         @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   steps    CompletionStep[]
 
   createdAt DateTime @default(now())
@@ -66,8 +67,8 @@ model Completion {
   userId     String
   exerciseId String
 
-  user     User             @relation(fields: [userId], references: [id])
-  exercise Exercise         @relation(fields: [exerciseId], references: [id])
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise         @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   steps    CompletionStep[]
 
   createdAt DateTime @default(now())
@@ -84,8 +85,8 @@ model CompletionStep {
   result         String?
   completed      Boolean @default(false)
 
-  completion   Completion            @relation(fields: [completionId], references: [id])
-  exerciseStep ExerciseStep          @relation(fields: [exerciseStepId], references: [id])
+  completion   Completion            @relation(fields: [completionId], references: [id], onDelete: Cascade)
+  exerciseStep ExerciseStep          @relation(fields: [exerciseStepId], references: [id], onDelete: Cascade)
   messages     ConversationMessage[]
 
   createdAt DateTime @default(now())
@@ -102,7 +103,7 @@ model ConversationMessage {
   /// [UIMessageParts]
   parts            Json
 
-  completionStep CompletionStep @relation(fields: [completionStepId], references: [id])
+  completionStep CompletionStep @relation(fields: [completionStepId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 

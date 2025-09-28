@@ -20,11 +20,11 @@ async function main() {
         create: [
           {
             order: 1,
+            title: 'Dating Myself: Suffering',
             content: {
               blocks: [
                 {
-                  content: `<h2>Step One: Dating Myself: The Most Interesting Person I've Just Met</h2>
-                    <p>I invite you to go on a date with yourself. Not the version of you that shows up in a boardroom, on stage, or at dinner parties, but the quiet, soulful version of you. The one who has been through every moment of your life. The one who has never left your side.</p>
+                  content: `<p>I invite you to go on a date with yourself. Not the version of you that shows up in a boardroom, on stage, or at dinner parties, but the quiet, soulful version of you. The one who has been through every moment of your life. The one who has never left your side.</p>
 
                     <p>Imagine you just met someone truly fascinating — wise, layered, scarred, accomplished, still learning, still open, still hungry. You want to know everything about them. Their triumphs, their regrets, their deepest needs and quietest joys. That person is you.</p>
 
@@ -63,11 +63,11 @@ Keep your responses warm, insightful, and focused on helping them develop a comp
           },
           {
             order: 2,
+            title: 'Dating Myself: Desires',
             content: {
               blocks: [
                 {
-                  content: `<h3>Desires</h3>
-                    <p>After reflecting on the answers, inquire further about:</p>
+                  content: `<p>After reflecting on the answers, inquire further about:</p>
                     <p><strong>"What do I need more of and what do I need less of to live my best life?"</strong></p>
 
                     <p>Ask it slowly - maybe one at a time. Let the response sit with you. You can engage the AI in further inquiry if something feels true, unclear, or revealing. Don't be afraid to press deeper. You may want to journal, meditate, or discuss it with your loved ones, friends or colleagues who can help you inquire further. This is an awareness practice.</p>`,
@@ -98,11 +98,11 @@ Be curious and supportive. Help them trust their inner wisdom about what they tr
           },
           {
             order: 3,
+            title: 'Ikigai Expanded: Light and Shadow',
             content: {
               blocks: [
                 {
-                  content: `<h2>Step Two: Ikigai Expanded, Light and Shadow</h2>
-                    <p>Before you answer the big question, "What does my Best Life look like?," it helps to think in the Ikigai framework. Ikigai is a Japanese concept of "purpose - a reason for being."</p>
+                  content: `<p>Before you answer the big question, "What does my Best Life look like?," it helps to think in the Ikigai framework. Ikigai is a Japanese concept of "purpose - a reason for being."</p>
 
                     <p>It is often visualized as the intersection of four key areas: <strong>What you love, What you are good at, What you can be paid for, and What the world needs.</strong> When all four align, it creates a life of fulfillment, contribution, and clarity.</p>
 
@@ -164,11 +164,11 @@ Be supportive but also challenge them to be honest. This exercise is about gaini
           },
           {
             order: 4,
+            title: 'Best Life Statement',
             content: {
               blocks: [
                 {
-                  content: `<h2>Step Three: Best Life</h2>
-                    <p>Now, ask yourself: <strong>What does my Best Life look like?</strong></p>
+                  content: `<p>Now, ask yourself: <strong>What does my Best Life look like?</strong></p>
 
                     <p>Here are a few AI prompts to help you write your answer:</p>
                     <ul>

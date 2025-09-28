@@ -29,6 +29,7 @@ export const blockSchema = z.object({
 export type Block = z.infer<typeof blockSchema>;
 
 export const addStepSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
   blocks: z.array(blockSchema).min(1, 'At least one block is required'),
 });
 
@@ -36,6 +37,7 @@ export type AddStep = z.infer<typeof addStepSchema>;
 
 export const updateStepSchema = z.object({
   stepId: z.string(),
+  title: z.string().min(1, 'Title is required'),
   content: z.string().optional(),
   systemPrompt: z.string().optional(),
   initialUserPrompt: z.string().optional(),
@@ -87,11 +89,13 @@ export const exerciseActionSchema = z.discriminatedUnion('action', [
   }),
   z.object({
     action: z.literal('addStep'),
+    title: z.string().min(1, 'Title is required'),
     blocks: z.array(blockSchema).min(1, 'At least one block is required'),
   }),
   z.object({
     action: z.literal('updateStep'),
     stepId: z.string(),
+    title: z.string().min(1, 'Title is required'),
     content: z.string().optional(),
     systemPrompt: z.string().optional(),
     initialUserPrompt: z.string().optional(),
