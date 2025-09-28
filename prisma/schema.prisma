@@ -108,3 +108,18 @@ model ConversationMessage {
 
   @@index([completionStepId])
 }
+
+enum SystemSettingsKey {
+  systemPromptTemplate
+}
+
+model SystemSettings {
+  id           String            @id @default(ulid())
+  key          SystemSettingsKey @unique
+  stringValue  String?
+  numberValue  Float?
+  booleanValue Boolean?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

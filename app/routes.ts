@@ -14,4 +14,5 @@ export default [
   route('admin/exercises', './routes/admin.exercises.tsx'),
   route('admin/exercises/new', './routes/admin.exercises.new.tsx'),
   route('admin/exercises/:id', './routes/admin.exercises.$id.tsx'),
+  route('admin/settings', './routes/admin.settings.tsx'),
 ] satisfies RouteConfig;

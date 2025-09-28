@@ -1,6 +1,7 @@
 import { ChevronDown, LogOut, User } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, useFetcher } from 'react-router';
+import { $path } from 'safe-routes';
 import type { User as UserType } from '../../prisma/generated/client';
 import { Button } from './ui/button';
 import {
@@ -30,11 +31,14 @@ export default function AdminLayout({ user, children }: AdminLayoutProps) {
                 <Link to="/admin">Admin Panel</Link>
               </h1>
               <nav className="flex gap-6">
-                <Link to="/admin/users" className="text-gray-600 hover:text-gray-900 font-medium">
+                <Link to={$path('/admin/users')} className="text-gray-600 hover:text-gray-900 font-medium">
                   Users
                 </Link>
-                <Link to="/admin/exercises" className="text-gray-600 hover:text-gray-900 font-medium">
+                <Link to={$path('/admin/exercises')} className="text-gray-600 hover:text-gray-900 font-medium">
                   Exercises
+                </Link>
+                <Link to={$path('/admin/settings')} className="text-gray-600 hover:text-gray-900 font-medium">
+                  Settings
                 </Link>
               </nav>
             </div>
@@ -54,7 +58,7 @@ export default function AdminLayout({ user, children }: AdminLayoutProps) {
                   <DropdownMenuLabel>Admin Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/profile" className="flex items-center">
+                    <Link to={$path('/profile')} className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </Link>

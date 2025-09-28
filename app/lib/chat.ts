@@ -49,3 +49,8 @@ export async function findOrCreateCompletionWithSteps(args: {
 
   return completion;
 }
+
+export type SystemPromptVariables = {
+  bio: string;
+  urls: string;
+};

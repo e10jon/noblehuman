@@ -1,5 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { convertToModelMessages, streamText, type UIMessage } from 'ai';
+import Handlebars from 'handlebars';
+import type { SystemPromptVariables } from '~/lib/chat';
 import type { User } from '../../prisma/generated/client';
 import { requireUser } from '../lib/auth';
 import { prisma } from '../lib/db';
@@ -40,9 +42,17 @@ export const action = async ({ request }: { request: Request }) => {
   // Add the new message to the conversation
   allMessages.push(message);
 
+  // Get system prompt template from settings
+  const systemPromptTemplate = await getSystemPromptTemplate();
+  const compiledSystemPrompt = await createCompleteSystemPrompt({
+    user,
+    supplementalSystemPrompt: systemPrompt,
+    template: systemPromptTemplate,
+  });
+
   const result = streamText({
     model: openai('gpt-4o'),
-    system: createCompleteSystemPrompt({ user, supplementalSystemPrompt: systemPrompt }),
+    system: compiledSystemPrompt,
     messages: convertToModelMessages(allMessages),
     tools: {
       web_search: openai.tools.webSearch({}),
@@ -64,23 +74,34 @@ export const action = async ({ request }: { request: Request }) => {
   return result.toUIMessageStreamResponse();
 };
 
-const createCompleteSystemPrompt = ({
+const getSystemPromptTemplate = async (): Promise<string> => {
+  const systemSettings = await prisma.systemSettings.findUniqueOrThrow({
+    where: { key: 'systemPromptTemplate' },
+  });
+
+  return systemSettings?.stringValue || '';
+};
+
+const createCompleteSystemPrompt = async ({
   user,
   supplementalSystemPrompt,
+  template,
 }: {
   user: User;
   supplementalSystemPrompt?: string;
+  template: string;
 }) => {
-  let prompt = 'You are a wise person.';
+  // Prepare data for Handlebars template
+  const templateData = {
+    bio: user.data.bio,
+    urls: user.data.urls.length > 0 ? user.data.urls.map((url) => url.url).join(', ') : '',
+  } satisfies SystemPromptVariables;
 
-  if (user.data.bio) {
-    prompt += `\n\nYou are speaking with someone who described themselves as this:\n${user.data.bio}.`;
-  }
+  // Compile and execute the Handlebars template
+  const compiledTemplate = Handlebars.compile(template);
+  let prompt = compiledTemplate(templateData);
 
-  if (user.data.urls.length > 0) {
-    prompt += `\n\nThey have provided the following URLs. Please visit them to learn more about them:\n${user.data.urls.map((url) => url.url).join(', ')}.`;
-  }
-
+  // Add supplemental system prompt if provided
   if (supplementalSystemPrompt) {
     prompt += `\n\n${supplementalSystemPrompt}`;
   }
