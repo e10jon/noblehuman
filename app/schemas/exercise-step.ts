@@ -10,8 +10,16 @@ export const exerciseStepContentSchema = z.object({
           initialUserPrompt: z.string().optional(),
         })
         .optional(),
+      resultPrompt: z.string().optional(),
     })
   ),
 });
 
 export type ExerciseStepContent = z.infer<typeof exerciseStepContentSchema>;
+
+export const saveResultSchema = z.object({
+  completionStepId: z.string(),
+  result: z.string(),
+});
+
+export type SaveResult = z.infer<typeof saveResultSchema>;

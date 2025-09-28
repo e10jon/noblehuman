@@ -8,6 +8,7 @@ export default [
   route('profile', './routes/profile.tsx'),
   route('exercise/:id', './routes/exercise.$id.tsx'),
   route('api/chat', './routes/api.chat.ts'),
+  route('api/save-result', './routes/api.save-result.ts'),
   route('admin', './routes/admin.tsx'),
   route('admin/users', './routes/admin.users.tsx'),
   route('admin/users/:id', './routes/admin.users.$id.tsx'),

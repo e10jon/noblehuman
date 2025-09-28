@@ -23,6 +23,7 @@ export const blockSchema = z.object({
   content: z.string().optional(),
   systemPrompt: z.string().optional(),
   initialUserPrompt: z.string().optional(),
+  resultPrompt: z.string().optional(),
 });
 
 export type Block = z.infer<typeof blockSchema>;
@@ -38,6 +39,7 @@ export const updateStepSchema = z.object({
   content: z.string().optional(),
   systemPrompt: z.string().optional(),
   initialUserPrompt: z.string().optional(),
+  resultPrompt: z.string().optional(),
 });
 
 export type UpdateStep = z.infer<typeof updateStepSchema>;
@@ -47,6 +49,7 @@ export const addBlockSchema = z.object({
   content: z.string().optional(),
   systemPrompt: z.string().optional(),
   initialUserPrompt: z.string().optional(),
+  resultPrompt: z.string().optional(),
 });
 
 export type AddBlock = z.infer<typeof addBlockSchema>;
@@ -57,6 +60,7 @@ export const updateBlockSchema = z.object({
   content: z.string().optional(),
   systemPrompt: z.string().optional(),
   initialUserPrompt: z.string().optional(),
+  resultPrompt: z.string().optional(),
 });
 
 export type UpdateBlock = z.infer<typeof updateBlockSchema>;
@@ -91,6 +95,7 @@ export const exerciseActionSchema = z.discriminatedUnion('action', [
     content: z.string().optional(),
     systemPrompt: z.string().optional(),
     initialUserPrompt: z.string().optional(),
+    resultPrompt: z.string().optional(),
   }),
   z.object({
     action: z.literal('deleteStep'),
@@ -107,6 +112,7 @@ export const exerciseActionSchema = z.discriminatedUnion('action', [
     content: z.string().optional(),
     systemPrompt: z.string().optional(),
     initialUserPrompt: z.string().optional(),
+    resultPrompt: z.string().optional(),
   }),
   z.object({
     action: z.literal('updateBlock'),
@@ -115,6 +121,7 @@ export const exerciseActionSchema = z.discriminatedUnion('action', [
     content: z.string().optional(),
     systemPrompt: z.string().optional(),
     initialUserPrompt: z.string().optional(),
+    resultPrompt: z.string().optional(),
   }),
   z.object({
     action: z.literal('deleteBlock'),
