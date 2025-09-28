@@ -12,6 +12,7 @@ export default [
   route('admin', './routes/admin.tsx'),
   route('admin/users', './routes/admin.users.tsx'),
   route('admin/users/:id', './routes/admin.users.$id.tsx'),
+  route('admin/users/:id/completions', './routes/admin.users.$id.completions.tsx'),
   route('admin/exercises', './routes/admin.exercises.tsx'),
   route('admin/exercises/new', './routes/admin.exercises.new.tsx'),
   route('admin/exercises/:id', './routes/admin.exercises.$id.tsx'),

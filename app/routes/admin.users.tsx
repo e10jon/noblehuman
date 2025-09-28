@@ -1,4 +1,4 @@
-import { Edit, Shield } from 'lucide-react';
+import { Edit, Eye, Shield } from 'lucide-react';
 import { Link, useLoaderData } from 'react-router';
 import { $path } from 'safe-routes';
 import AdminLayout from '../components/AdminLayout';
@@ -51,6 +51,11 @@ export default function AdminUsers() {
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={$path('/admin/users/:id/completions', { id: u.id })}>
+                      <Eye className="h-4 w-4" />
+                    </Link>
+                  </Button>
                   <Button variant="outline" size="sm" asChild>
                     <Link to={$path('/admin/users/:id', { id: u.id })}>
                       <Edit className="h-4 w-4" />

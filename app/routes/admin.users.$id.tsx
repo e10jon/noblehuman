@@ -185,27 +185,6 @@ export default function AdminUserEdit() {
             </div>
           </CardContent>
         </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Exercise Completions ({user.completions.length})</CardTitle>
-            <CardDescription>User's exercise completion history</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {user.completions.length === 0 ? (
-              <p className="text-gray-500">No completions yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {user.completions.map((completion) => (
-                  <div key={completion.id} className="flex justify-between items-center p-3 border rounded">
-                    <span className="font-medium">{completion.exercise.name}</span>
-                    <span className="text-sm text-gray-600">{new Date(completion.createdAt).toLocaleDateString()}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </AdminLayout>
   );
