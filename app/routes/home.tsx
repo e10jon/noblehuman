@@ -1,6 +1,7 @@
-import { ChevronDown, LogOut, User } from 'lucide-react';
-import type { LoaderFunctionArgs, MetaFunction } from 'react-router';
+import { ChevronDown, LogOut, Settings, User } from 'lucide-react';
+import type { MetaFunction } from 'react-router';
 import { Link, useFetcher, useLoaderData } from 'react-router';
+import { $path } from 'safe-routes';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import {
@@ -13,12 +14,13 @@ import {
 } from '~/components/ui/dropdown-menu';
 import { getUserFromCookie } from '../lib/auth';
 import { prisma } from '../lib/db';
+import type { Route } from './+types/home';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Noble Human' }, { name: 'description', content: 'Welcome to Noble Human!' }];
 };
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const cookieHeader = request.headers.get('Cookie');
   const user = await getUserFromCookie(cookieHeader);
 
@@ -70,8 +72,16 @@ export default function Index() {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                    {user.isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link to={$path('/admin')} className="flex items-center">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Admin
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
-                      <Link to="/profile" className="flex items-center">
+                      <Link to={$path('/profile')} className="flex items-center">
                         <User className="mr-2 h-4 w-4" />
                         Profile
                       </Link>
@@ -91,10 +101,10 @@ export default function Index() {
               ) : (
                 <div className="flex gap-2">
                   <Button variant="outline" asChild>
-                    <Link to="/login">Login</Link>
+                    <Link to={$path('/login')}>Login</Link>
                   </Button>
                   <Button asChild>
-                    <Link to="/signup">Sign Up</Link>
+                    <Link to={$path('/signup')}>Sign Up</Link>
                   </Button>
                 </div>
               )}
@@ -112,7 +122,7 @@ export default function Index() {
                 Explore the Four Noble Truths through self-inquiry, reflection, and conscious leadership.
                 {!user && (
                   <span className="block mt-2">
-                    <Link to="/login" className="text-indigo-600 hover:text-indigo-500">
+                    <Link to={$path('/login')} className="text-indigo-600 hover:text-indigo-500">
                       Login
                     </Link>{' '}
                     to track your progress and save your responses.
@@ -127,7 +137,10 @@ export default function Index() {
               <Card key={exercise.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="text-lg">
-                    <Link to={`/exercise/${exercise.id}`} className="text-indigo-600 hover:text-indigo-700">
+                    <Link
+                      to={$path('/exercise/:id', { id: exercise.id })}
+                      className="text-indigo-600 hover:text-indigo-700"
+                    >
                       {exercise.name}
                     </Link>
                   </CardTitle>

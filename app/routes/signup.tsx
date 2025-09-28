@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
+import type { MetaFunction } from 'react-router';
 import { data, Link, redirect, useActionData, useFetcher, useSearchParams } from 'react-router';
+import { $path } from 'safe-routes';
 import { Alert, AlertDescription } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
@@ -10,23 +11,24 @@ import { Input } from '~/components/ui/input';
 import { createSessionCookie, createUser, getUserFromCookie } from '../lib/auth';
 import { prisma } from '../lib/db';
 import { type SignupSchema, signupSchema } from '../schemas/signup';
+import type { Route } from './+types/signup';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Sign Up - Noble Human' }, { name: 'description', content: 'Create your Noble Human account' }];
 };
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const cookieHeader = request.headers.get('Cookie');
   const user = await getUserFromCookie(cookieHeader);
 
   if (user) {
-    return redirect('/');
+    return redirect($path('/'));
   }
 
   return null;
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   const json = await request.json();
   const result = signupSchema.safeParse(json);
 
@@ -90,7 +92,7 @@ export default function SignUp() {
             <CardTitle className="text-2xl text-center">Create your account</CardTitle>
             <CardDescription className="text-center">
               Or{' '}
-              <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+              <Link to={$path('/login')} className="font-medium text-indigo-600 hover:text-indigo-500">
                 sign in to your existing account
               </Link>
             </CardDescription>

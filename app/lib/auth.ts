@@ -96,3 +96,13 @@ export async function requireUser(request: Request): Promise<User> {
 
   return user;
 }
+
+export async function requireAdmin(request: Request): Promise<User> {
+  const user = await requireUser(request);
+
+  if (!user.isAdmin) {
+    throw new Response('Forbidden', { status: 403 });
+  }
+
+  return user;
+}

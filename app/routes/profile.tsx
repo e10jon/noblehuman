@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
+import type { MetaFunction } from 'react-router';
 import { data, Link, useFetcher, useLoaderData } from 'react-router';
+import { $path } from 'safe-routes';
 import { Alert, AlertDescription } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
@@ -13,17 +14,18 @@ import type { ActionSchema } from '~/schemas/action';
 import { requireUser } from '../lib/auth';
 import { prisma } from '../lib/db';
 import { type UserData, userDataSchema } from '../schemas/user';
+import type { Route } from './+types/profile';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Profile - Noble Human' }, { name: 'description', content: 'Manage your Noble Human profile' }];
 };
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const user = await requireUser(request);
   return { user };
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   const user = await requireUser(request);
 
   try {
@@ -31,9 +33,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const parsed = userDataSchema.parse(json);
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        data: parsed,
-      },
+      data: { data: parsed },
     });
 
     return data({ success: 'Profile updated successfully!' } satisfies ActionSchema, { status: 200 });
@@ -79,7 +79,7 @@ export default function Profile() {
       <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <Button variant="link" asChild className="p-0">
-            <Link to="/">← Back to home</Link>
+            <Link to={$path('/')}>← Back to home</Link>
           </Button>
           <h1 className="mt-4 text-3xl font-bold text-gray-900">Your Profile</h1>
           <p className="mt-2 text-gray-600">{user.email}</p>

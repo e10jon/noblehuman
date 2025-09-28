@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from 'react-router';
+import type { MetaFunction } from 'react-router';
 import { data, Link, redirect, useActionData, useFetcher, useSearchParams } from 'react-router';
+import { $path } from 'safe-routes';
 import { Alert, AlertDescription } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
@@ -9,23 +10,24 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '~/components/ui/input';
 import { createSessionCookie, getUserFromCookie, validateUser } from '../lib/auth';
 import { type LoginSchema, loginSchema } from '../schemas/login';
+import type { Route } from './+types/login';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Login - Noble Human' }, { name: 'description', content: 'Login to Noble Human' }];
 };
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const cookieHeader = request.headers.get('Cookie');
   const user = await getUserFromCookie(cookieHeader);
 
   if (user) {
-    return redirect('/');
+    return redirect($path('/'));
   }
 
   return null;
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   const json = await request.json();
   const result = loginSchema.safeParse(json);
 
@@ -82,7 +84,7 @@ export default function Login() {
             <CardTitle className="text-2xl text-center">Sign in to your account</CardTitle>
             <CardDescription className="text-center">
               Or{' '}
-              <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+              <Link to={$path('/signup')} className="font-medium text-indigo-600 hover:text-indigo-500">
                 create a new account
               </Link>
             </CardDescription>

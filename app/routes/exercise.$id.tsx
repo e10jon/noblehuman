@@ -1,12 +1,13 @@
 import ReactMarkdown from 'react-markdown';
-import type { LoaderFunctionArgs } from 'react-router';
 import { Link, useLoaderData } from 'react-router';
+import { $path } from 'safe-routes';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import Conversation from '../components/Conversation';
 import { prisma } from '../lib/db';
+import type { Route } from './+types/exercise.$id';
 
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function loader({ params }: Route.LoaderArgs) {
   const exercise = await prisma.exercise.findUnique({
     where: { id: params.id },
     include: {
@@ -31,7 +32,7 @@ export default function Exercise() {
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">
           <Button variant="link" asChild className="p-0">
-            <Link to="/">← Back to exercises</Link>
+            <Link to={$path('/')}>← Back to exercises</Link>
           </Button>
         </div>
         <h1 className="text-3xl font-bold mb-8">{exercise.name}</h1>

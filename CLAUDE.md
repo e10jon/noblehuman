@@ -26,6 +26,11 @@
 - Validate that the solution aligns with project architecture
 - Ensure the code will be maintainable and extensible
 
+### NEVER USE (ZERO TOLERANCE):
+- **`!`** (non-null assertion)
+- **`any`** type
+- **`as`** (type assertions)
+
 ## Code Guidelines
 
 - Write **ONLY** the minimal code required to meet the specified requirements
@@ -40,3 +45,20 @@
 - Prioritize brevity and minimalism over robustness
 - After code changes, run `npm run typecheck && npm run check` until they both
   pass
+
+## Form & Action Patterns
+
+**Actions should use JSON with Zod schemas:**
+
+- Accept JSON payloads using `await request.json()`
+- Validate input with Zod schemas (e.g., `userDataSchema.parse(json)`)
+- Return standardized `ActionSchema` responses with `success` or `error` fields
+- Use `data({ success: 'message' } satisfies ActionSchema, { status: 200 })` for success
+- Use `data({ error: 'message' } satisfies ActionSchema, { status: 400 })` for errors
+
+**Forms should use react-hook-form with Zod validation:**
+
+- Initialize forms with `useForm<T>({ resolver: zodResolver(schema) })`
+- Submit as JSON using `fetcher.submit(formData, { method: 'POST', encType: 'application/json' })`
+- Type fetchers with `useFetcher<ActionSchema>()`
+- Handle responses with success/error state management
