@@ -8,6 +8,7 @@ import type { ActionSchema } from '~/schemas/action';
 import AdminLayout from '../components/AdminLayout';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Editor } from '../components/ui/editor';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../components/ui/form';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
@@ -81,15 +82,13 @@ function useFormSubmission() {
 function ContentField<T extends FieldValues>({
   control,
   name,
-  label = 'Content (Markdown)',
-  placeholder = 'Enter content in markdown...',
-  rows = 3,
+  label = 'Content',
+  placeholder = 'Enter content...',
 }: {
   control: Control<T>;
   name: Path<T>;
   label?: string;
   placeholder?: string;
-  rows?: number;
 }) {
   return (
     <FormField
@@ -99,7 +98,7 @@ function ContentField<T extends FieldValues>({
         <FormItem>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Textarea placeholder={placeholder} rows={rows} {...field} />
+            <Editor placeholder={placeholder} {...field} />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -566,14 +565,12 @@ function AddStepForm() {
 
               <div>
                 <label htmlFor={`block-content-${index}`} className="text-sm font-medium">
-                  Content (Markdown)
+                  Content
                 </label>
-                <Textarea
-                  id={`block-content-${index}`}
-                  placeholder="Enter block content in markdown..."
-                  rows={3}
+                <Editor
+                  placeholder="Enter block content..."
                   value={block.content || ''}
-                  onChange={(e) => updateBlock(index, 'content', e.target.value)}
+                  onChange={(value) => updateBlock(index, 'content', value)}
                 />
               </div>
 
@@ -659,7 +656,7 @@ function EditStepForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <ContentField control={form.control} name="content" rows={4} />
+        <ContentField control={form.control} name="content" />
         <SystemPromptField control={form.control} name="systemPrompt" rows={3} />
         <InitialUserPromptField control={form.control} name="initialUserPrompt" />
 
