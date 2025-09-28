@@ -56,9 +56,6 @@ const ResultEditor = forwardRef<HTMLDivElement, ResultEditorProps>(
         )}
       >
         <EditorContent editor={editor} />
-        {!editor.getText() && placeholder && (
-          <div className="absolute top-[60px] left-3 text-gray-400 pointer-events-none">{placeholder}</div>
-        )}
       </div>
     );
   }

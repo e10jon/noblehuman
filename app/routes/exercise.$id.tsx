@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
 import { Link, useFetcher, useLoaderData } from 'react-router';
 import { $path } from 'safe-routes';
 import { Button } from '~/components/ui/button';
@@ -132,9 +131,8 @@ export default function Exercise() {
                   {step.content?.blocks?.map((block, index) => (
                     <div key={`${step.id}-block-${index}`}>
                       {block.content && (
-                        <div className="text-gray-700 mb-4 prose">
-                          <ReactMarkdown>{block.content}</ReactMarkdown>
-                        </div>
+                        // biome-ignore lint/security/noDangerouslySetInnerHtml: We trust this.
+                        <div className="text-gray-700 mb-4 prose" dangerouslySetInnerHTML={{ __html: block.content }} />
                       )}
                       {block.ai && completionStep && (
                         <div className="my-6 border border-zinc-200 dark:border-zinc-800 rounded-lg">
