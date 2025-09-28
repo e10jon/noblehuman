@@ -4,28 +4,30 @@ import { $path } from 'safe-routes';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import Conversation from '../components/Conversation';
+import { requireUser } from '../lib/auth';
+import { findOrCreateCompletionWithSteps } from '../lib/chat';
 import { prisma } from '../lib/db';
 import type { Route } from './+types/exercise.$id';
 
-export async function loader({ params }: Route.LoaderArgs) {
-  const exercise = await prisma.exercise.findUnique({
+export async function loader({ params, request }: Route.LoaderArgs) {
+  const user = await requireUser(request);
+
+  const exercise = await prisma.exercise.findUniqueOrThrow({
     where: { id: params.id },
-    include: {
-      steps: {
-        orderBy: { order: 'asc' },
-      },
-    },
+    include: { steps: { orderBy: { order: 'asc' } } },
   });
 
-  if (!exercise) {
-    throw new Response('Not Found', { status: 404 });
-  }
+  const completion = await findOrCreateCompletionWithSteps({
+    userId: user.id,
+    exerciseId: exercise.id,
+    exerciseSteps: exercise.steps,
+  });
 
-  return { exercise };
+  return { exercise, completion };
 }
 
 export default function Exercise() {
-  const { exercise } = useLoaderData<typeof loader>();
+  const { exercise, completion } = useLoaderData<typeof loader>();
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -38,6 +40,8 @@ export default function Exercise() {
         <h1 className="text-3xl font-bold mb-8">{exercise.name}</h1>
         <div className="space-y-4">
           {exercise.steps.map((step) => {
+            const completionStep = completion?.steps.find((cs) => cs.exerciseStepId === step.id);
+
             return (
               <Card key={step.id} className="mb-12">
                 <CardHeader>
@@ -51,11 +55,13 @@ export default function Exercise() {
                           <ReactMarkdown>{block.content}</ReactMarkdown>
                         </div>
                       )}
-                      {block.ai && (
+                      {block.ai && completionStep && (
                         <div className="my-6 border border-zinc-200 dark:border-zinc-800 rounded-lg">
                           <Conversation
                             systemPrompt={block.ai.systemPrompt}
                             initialUserPrompt={block.ai.initialUserPrompt}
+                            completionStepId={completionStep.id}
+                            initialMessages={completionStep.messages}
                           />
                         </div>
                       )}

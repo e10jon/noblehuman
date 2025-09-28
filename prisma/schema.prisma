@@ -99,7 +99,8 @@ model ConversationMessage {
   id               String      @id @default(ulid())
   completionStepId String
   role             MessageRole
-  content          String
+  /// [UIMessageParts]
+  parts            Json
 
   completionStep CompletionStep @relation(fields: [completionStepId], references: [id])
 

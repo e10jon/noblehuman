@@ -1,7 +1,7 @@
 import { useChat } from '@ai-sdk/react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { DefaultChatTransport } from 'ai';
+import { DefaultChatTransport, type UIMessage } from 'ai';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '~/lib/utils';
@@ -10,16 +10,34 @@ import { Button } from './ui/button';
 interface ConversationProps {
   systemPrompt?: string;
   initialUserPrompt?: string;
+  completionStepId?: string;
+  initialMessages?: UIMessage[];
 }
 
-export default function Conversation({ systemPrompt, initialUserPrompt }: ConversationProps) {
-  const [conversationStarted, setConversationStarted] = useState(!initialUserPrompt);
+export default function Conversation({
+  systemPrompt,
+  initialUserPrompt,
+  completionStepId,
+  initialMessages = [],
+}: ConversationProps) {
+  const [conversationStarted, setConversationStarted] = useState(!initialUserPrompt || initialMessages.length > 0);
   const [hasContent, setHasContent] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { messages, sendMessage } = useChat({
+    messages: initialMessages,
     transport: new DefaultChatTransport({
-      body: { systemPrompt },
+      prepareSendMessagesRequest({ messages }) {
+        const message = messages[messages.length - 1];
+        if (!message) throw new Error('No message to send');
+        return {
+          body: {
+            message,
+            systemPrompt,
+            completionStepId,
+          },
+        };
+      },
     }),
   });
 

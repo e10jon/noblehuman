@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowDown, ArrowLeft, ArrowUp, Edit, Plus, Save, Trash2 } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { data, Link, useFetcher, useLoaderData } from 'react-router';
+import { type Control, type FieldValues, type Path, useForm } from 'react-hook-form';
+import { data, Link, type SubmitTarget, useFetcher, useLoaderData } from 'react-router';
 import { $path } from 'safe-routes';
 import type { ActionSchema } from '~/schemas/action';
 import AdminLayout from '../components/AdminLayout';
@@ -28,6 +28,196 @@ import {
   updateStepSchema,
 } from '../schemas/admin/exercise';
 import type { Route } from './+types/admin.exercises.$id';
+
+// Utility functions
+function createBlockData(data: { content?: string; systemPrompt?: string; initialUserPrompt?: string }) {
+  return {
+    content: data.content || undefined,
+    ai:
+      data.systemPrompt || data.initialUserPrompt
+        ? {
+            systemPrompt: data.systemPrompt || undefined,
+            initialUserPrompt: data.initialUserPrompt || undefined,
+          }
+        : undefined,
+  };
+}
+
+async function getStepWithBlocks(stepId: string) {
+  const step = await prisma.exerciseStep.findUnique({
+    where: { id: stepId },
+    select: { content: true },
+  });
+
+  if (!step) {
+    return { step: null, blocks: [] };
+  }
+
+  const blocks = Array.isArray(step.content?.blocks) ? [...step.content.blocks] : [];
+  return { step, blocks };
+}
+
+function useFormSubmission() {
+  const fetcher = useFetcher<ActionSchema>();
+  const [actionData, setActionData] = useState<ActionSchema | null>(null);
+
+  useEffect(() => {
+    if (fetcher.state === 'idle' && fetcher.data) {
+      setActionData(fetcher.data);
+    }
+  }, [fetcher.data, fetcher.state]);
+
+  const submit = (data: SubmitTarget) => {
+    fetcher.submit(data, {
+      method: 'POST',
+      encType: 'application/json',
+    });
+  };
+
+  return { submit, actionData, isSubmitting: fetcher.state === 'loading', fetcher };
+}
+
+// Reusable form field components
+function ContentField<T extends FieldValues>({
+  control,
+  name,
+  label = 'Content (Markdown)',
+  placeholder = 'Enter content in markdown...',
+  rows = 3,
+}: {
+  control: Control<T>;
+  name: Path<T>;
+  label?: string;
+  placeholder?: string;
+  rows?: number;
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Textarea placeholder={placeholder} rows={rows} {...field} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function SystemPromptField<T extends FieldValues>({
+  control,
+  name,
+  rows = 2,
+}: {
+  control: Control<T>;
+  name: Path<T>;
+  rows?: number;
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>AI System Prompt</FormLabel>
+          <FormControl>
+            <Textarea placeholder="Enter system prompt for AI conversation..." rows={rows} {...field} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function InitialUserPromptField<T extends FieldValues>({
+  control,
+  name,
+  rows = 2,
+}: {
+  control: Control<T>;
+  name: Path<T>;
+  rows?: number;
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>AI Initial User Prompt</FormLabel>
+          <FormControl>
+            <Textarea placeholder="Enter initial user prompt for AI conversation..." rows={rows} {...field} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function FormMessages({ actionData }: { actionData: ActionSchema | null }) {
+  if (!actionData) return null;
+
+  if ('success' in actionData) {
+    return <div className="text-green-600 text-sm">{actionData.success}</div>;
+  }
+
+  if ('error' in actionData) {
+    return <div className="text-red-600 text-sm">{actionData.error}</div>;
+  }
+
+  return null;
+}
+
+function ActionForm({ onSubmit, children }: { onSubmit: () => void; children: ReactNode }) {
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
+      }}
+    >
+      {children}
+    </form>
+  );
+}
+
+function BlockDisplay({
+  block,
+}: {
+  block: { content?: string; ai?: { systemPrompt?: string; initialUserPrompt?: string } };
+}) {
+  return (
+    <div className="space-y-3">
+      {block?.content && (
+        <div>
+          <div className="text-xs font-medium text-gray-600 mb-1">Content</div>
+          <div className="bg-gray-50 p-2 rounded text-xs whitespace-pre-wrap">{block.content}</div>
+        </div>
+      )}
+      {block?.ai?.systemPrompt && (
+        <div>
+          <div className="text-xs font-medium text-gray-600 mb-1">AI System Prompt</div>
+          <div className="bg-blue-50 p-2 rounded text-xs whitespace-pre-wrap">{block.ai.systemPrompt}</div>
+        </div>
+      )}
+      {block?.ai?.initialUserPrompt && (
+        <div>
+          <div className="text-xs font-medium text-gray-600 mb-1">AI Initial User Prompt</div>
+          <div className="bg-green-50 p-2 rounded text-xs whitespace-pre-wrap">{block.ai.initialUserPrompt}</div>
+        </div>
+      )}
+      {!(block?.content || block?.ai?.systemPrompt || block?.ai?.initialUserPrompt) && (
+        <div className="text-gray-400 text-xs italic">This block has no content. Click Edit to add content.</div>
+      )}
+    </div>
+  );
+}
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const user = await requireAdmin(request);
@@ -65,16 +255,7 @@ async function handleAddStep(
   const newOrder = (maxOrder?.order || 0) + 1;
 
   const stepContent = {
-    blocks: parsed.blocks.map((block) => ({
-      content: block.content || undefined,
-      ai:
-        block.systemPrompt || block.initialUserPrompt
-          ? {
-              systemPrompt: block.systemPrompt || undefined,
-              initialUserPrompt: block.initialUserPrompt || undefined,
-            }
-          : undefined,
-    })),
+    blocks: parsed.blocks.map(createBlockData),
   };
 
   await prisma.exerciseStep.create({
@@ -95,18 +276,7 @@ async function handleUpdateStep(parsed: {
   initialUserPrompt?: string;
 }) {
   const stepContent = {
-    blocks: [
-      {
-        content: parsed.content,
-        ai:
-          parsed.systemPrompt || parsed.initialUserPrompt
-            ? {
-                systemPrompt: parsed.systemPrompt,
-                initialUserPrompt: parsed.initialUserPrompt,
-              }
-            : undefined,
-      },
-    ],
+    blocks: [createBlockData(parsed)],
   };
 
   await prisma.exerciseStep.update({
@@ -166,30 +336,13 @@ async function handleAddBlock(parsed: {
   systemPrompt?: string;
   initialUserPrompt?: string;
 }) {
-  const step = await prisma.exerciseStep.findUnique({
-    where: { id: parsed.stepId },
-    select: { content: true },
-  });
+  const { step, blocks } = await getStepWithBlocks(parsed.stepId);
 
   if (!step) {
     return data({ error: 'Step not found' } satisfies ActionSchema, { status: 404 });
   }
 
-  const currentContent = step.content;
-  const blocks = Array.isArray(currentContent?.blocks) ? currentContent.blocks : [];
-
-  const newBlock = {
-    content: parsed.content || undefined,
-    ai:
-      parsed.systemPrompt || parsed.initialUserPrompt
-        ? {
-            systemPrompt: parsed.systemPrompt || undefined,
-            initialUserPrompt: parsed.initialUserPrompt || undefined,
-          }
-        : undefined,
-  };
-
-  blocks.push(newBlock);
+  blocks.push(createBlockData(parsed));
 
   await prisma.exerciseStep.update({
     where: { id: parsed.stepId },
@@ -208,32 +361,17 @@ async function handleUpdateBlock(parsed: {
   systemPrompt?: string;
   initialUserPrompt?: string;
 }) {
-  const step = await prisma.exerciseStep.findUnique({
-    where: { id: parsed.stepId },
-    select: { content: true },
-  });
+  const { step, blocks } = await getStepWithBlocks(parsed.stepId);
 
   if (!step) {
     return data({ error: 'Step not found' } satisfies ActionSchema, { status: 404 });
   }
 
-  const currentContent = step.content;
-  const blocks = Array.isArray(currentContent?.blocks) ? [...currentContent.blocks] : [];
-
   if (parsed.blockIndex >= blocks.length) {
     return data({ error: 'Block not found' } satisfies ActionSchema, { status: 404 });
   }
 
-  blocks[parsed.blockIndex] = {
-    content: parsed.content || undefined,
-    ai:
-      parsed.systemPrompt || parsed.initialUserPrompt
-        ? {
-            systemPrompt: parsed.systemPrompt || undefined,
-            initialUserPrompt: parsed.initialUserPrompt || undefined,
-          }
-        : undefined,
-  };
+  blocks[parsed.blockIndex] = createBlockData(parsed);
 
   await prisma.exerciseStep.update({
     where: { id: parsed.stepId },
@@ -246,17 +384,11 @@ async function handleUpdateBlock(parsed: {
 }
 
 async function handleDeleteBlock(parsed: { stepId: string; blockIndex: number }) {
-  const step = await prisma.exerciseStep.findUnique({
-    where: { id: parsed.stepId },
-    select: { content: true },
-  });
+  const { step, blocks } = await getStepWithBlocks(parsed.stepId);
 
   if (!step) {
     return data({ error: 'Step not found' } satisfies ActionSchema, { status: 404 });
   }
-
-  const currentContent = step.content;
-  const blocks = Array.isArray(currentContent?.blocks) ? [...currentContent.blocks] : [];
 
   if (parsed.blockIndex >= blocks.length) {
     return data({ error: 'Block not found' } satisfies ActionSchema, { status: 404 });
@@ -279,17 +411,11 @@ async function handleDeleteBlock(parsed: { stepId: string; blockIndex: number })
 }
 
 async function handleReorderBlock(parsed: { stepId: string; blockIndex: number; direction: 'up' | 'down' }) {
-  const step = await prisma.exerciseStep.findUnique({
-    where: { id: parsed.stepId },
-    select: { content: true },
-  });
+  const { step, blocks } = await getStepWithBlocks(parsed.stepId);
 
   if (!step) {
     return data({ error: 'Step not found' } satisfies ActionSchema, { status: 404 });
   }
-
-  const currentContent = step.content;
-  const blocks = Array.isArray(currentContent?.blocks) ? [...currentContent.blocks] : [];
 
   if (parsed.blockIndex >= blocks.length) {
     return data({ error: 'Block not found' } satisfies ActionSchema, { status: 404 });
@@ -348,8 +474,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 function UpdateExerciseForm({ exerciseName }: { exerciseName: string }) {
-  const fetcher = useFetcher<ActionSchema>();
-  const [actionData, setActionData] = useState<ActionSchema | null>(null);
+  const { submit, actionData, isSubmitting } = useFormSubmission();
 
   const form = useForm<UpdateExercise>({
     resolver: zodResolver(updateExerciseSchema),
@@ -357,24 +482,12 @@ function UpdateExerciseForm({ exerciseName }: { exerciseName: string }) {
   });
 
   const onSubmit = (formData: UpdateExercise) => {
-    fetcher.submit(
-      { action: 'updateExercise', ...formData },
-      {
-        method: 'POST',
-        encType: 'application/json',
-      }
-    );
+    submit({ action: 'updateExercise', ...formData });
   };
-
-  useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data) {
-      setActionData(fetcher.data);
-    }
-  }, [fetcher.data, fetcher.state]);
 
   return (
     <Form {...form}>
-      <fetcher.Form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -389,15 +502,13 @@ function UpdateExerciseForm({ exerciseName }: { exerciseName: string }) {
           )}
         />
 
-        {actionData && 'success' in actionData && <div className="text-green-600 text-sm">{actionData.success}</div>}
+        <FormMessages actionData={actionData} />
 
-        {actionData && 'error' in actionData && <div className="text-red-600 text-sm">{actionData.error}</div>}
-
-        <Button type="submit" disabled={form.formState.isSubmitting}>
+        <Button type="submit" disabled={isSubmitting}>
           <Save className="h-4 w-4 mr-2" />
-          {form.formState.isSubmitting ? 'Saving...' : 'Save Exercise'}
+          {isSubmitting ? 'Saving...' : 'Save Exercise'}
         </Button>
-      </fetcher.Form>
+      </form>
     </Form>
   );
 }
@@ -405,8 +516,7 @@ function UpdateExerciseForm({ exerciseName }: { exerciseName: string }) {
 type BlockWithId = Block & { id: string };
 
 function AddStepForm() {
-  const fetcher = useFetcher<ActionSchema>();
-  const [actionData, setActionData] = useState<ActionSchema | null>(null);
+  const { submit, actionData, isSubmitting } = useFormSubmission();
   const [blocks, setBlocks] = useState<BlockWithId[]>([
     { id: crypto.randomUUID(), content: '', systemPrompt: '', initialUserPrompt: '' },
   ]);
@@ -418,22 +528,10 @@ function AddStepForm() {
 
   const onSubmit = (_formData: AddStep) => {
     const cleanBlocks = blocks.map(({ id, ...block }) => block);
-    fetcher.submit(
-      { action: 'addStep', blocks: cleanBlocks },
-      {
-        method: 'POST',
-        encType: 'application/json',
-      }
-    );
+    submit({ action: 'addStep', blocks: cleanBlocks });
     form.reset();
     setBlocks([{ id: crypto.randomUUID(), content: '', systemPrompt: '', initialUserPrompt: '' }]);
   };
-
-  useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data) {
-      setActionData(fetcher.data);
-    }
-  }, [fetcher.data, fetcher.state]);
 
   const addBlock = () => {
     setBlocks([...blocks, { id: crypto.randomUUID(), content: '', systemPrompt: '', initialUserPrompt: '' }]);
@@ -453,7 +551,7 @@ function AddStepForm() {
 
   return (
     <Form {...form}>
-      <fetcher.Form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-6">
           {blocks.map((block, index) => (
             <div key={block.id} className="border rounded-lg p-4 space-y-4">
@@ -513,15 +611,13 @@ function AddStepForm() {
           Add Block
         </Button>
 
-        {actionData && 'success' in actionData && <div className="text-green-600 text-sm">{actionData.success}</div>}
+        <FormMessages actionData={actionData} />
 
-        {actionData && 'error' in actionData && <div className="text-red-600 text-sm">{actionData.error}</div>}
-
-        <Button type="submit" disabled={form.formState.isSubmitting}>
+        <Button type="submit" disabled={isSubmitting}>
           <Save className="h-4 w-4 mr-2" />
-          {form.formState.isSubmitting ? 'Adding...' : 'Add Step'}
+          {isSubmitting ? 'Adding...' : 'Add Step'}
         </Button>
-      </fetcher.Form>
+      </form>
     </Form>
   );
 }
@@ -536,8 +632,7 @@ function EditStepForm({
   };
   onCancel: () => void;
 }) {
-  const fetcher = useFetcher<ActionSchema>();
-  const [actionData, setActionData] = useState<ActionSchema | null>(null);
+  const { submit, actionData, isSubmitting, fetcher } = useFormSubmission();
 
   const block = step.content?.blocks?.[0];
 
@@ -552,90 +647,40 @@ function EditStepForm({
   });
 
   const onSubmit = (formData: UpdateStep) => {
-    fetcher.submit(
-      { action: 'updateStep', ...formData },
-      {
-        method: 'POST',
-        encType: 'application/json',
-      }
-    );
+    submit({ action: 'updateStep', ...formData });
   };
 
   useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data) {
-      setActionData(fetcher.data);
-      if (fetcher.data && 'success' in fetcher.data) {
-        onCancel();
-      }
+    if (fetcher.state === 'idle' && fetcher.data && 'success' in fetcher.data) {
+      onCancel();
     }
   }, [fetcher.data, fetcher.state, onCancel]);
 
   return (
     <Form {...form}>
-      <fetcher.Form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="content"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Content (Markdown)</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter step content in markdown..." rows={4} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <ContentField control={form.control} name="content" rows={4} />
+        <SystemPromptField control={form.control} name="systemPrompt" rows={3} />
+        <InitialUserPromptField control={form.control} name="initialUserPrompt" />
 
-        <FormField
-          control={form.control}
-          name="systemPrompt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>AI System Prompt</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter system prompt for AI conversation..." rows={3} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="initialUserPrompt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>AI Initial User Prompt</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter initial user prompt for AI conversation..." rows={2} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {actionData && 'success' in actionData && <div className="text-green-600 text-sm">{actionData.success}</div>}
-
-        {actionData && 'error' in actionData && <div className="text-red-600 text-sm">{actionData.error}</div>}
+        <FormMessages actionData={actionData} />
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button type="submit" disabled={isSubmitting}>
             <Save className="h-4 w-4 mr-2" />
-            {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
         </div>
-      </fetcher.Form>
+      </form>
     </Form>
   );
 }
 
 function AddBlockForm({ stepId }: { stepId: string }) {
-  const fetcher = useFetcher<ActionSchema>();
-  const [actionData, setActionData] = useState<ActionSchema | null>(null);
+  const { submit, actionData, isSubmitting } = useFormSubmission();
 
   const form = useForm<AddBlock>({
     resolver: zodResolver(addBlockSchema),
@@ -643,76 +688,24 @@ function AddBlockForm({ stepId }: { stepId: string }) {
   });
 
   const onSubmit = (formData: AddBlock) => {
-    fetcher.submit(
-      { action: 'addBlock', ...formData },
-      {
-        method: 'POST',
-        encType: 'application/json',
-      }
-    );
+    submit({ action: 'addBlock', ...formData });
     form.reset();
   };
 
-  useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data) {
-      setActionData(fetcher.data);
-    }
-  }, [fetcher.data, fetcher.state]);
-
   return (
     <Form {...form}>
-      <fetcher.Form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="content"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Content (Markdown)</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter block content in markdown..." rows={3} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <ContentField control={form.control} name="content" />
+        <SystemPromptField control={form.control} name="systemPrompt" />
+        <InitialUserPromptField control={form.control} name="initialUserPrompt" />
 
-        <FormField
-          control={form.control}
-          name="systemPrompt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>AI System Prompt</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter system prompt for AI conversation..." rows={2} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <FormMessages actionData={actionData} />
 
-        <FormField
-          control={form.control}
-          name="initialUserPrompt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>AI Initial User Prompt</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter initial user prompt for AI conversation..." rows={2} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {actionData && 'success' in actionData && <div className="text-green-600 text-sm">{actionData.success}</div>}
-
-        {actionData && 'error' in actionData && <div className="text-red-600 text-sm">{actionData.error}</div>}
-
-        <Button type="submit" disabled={form.formState.isSubmitting}>
+        <Button type="submit" disabled={isSubmitting}>
           <Plus className="h-4 w-4 mr-2" />
-          {form.formState.isSubmitting ? 'Adding...' : 'Add Block'}
+          {isSubmitting ? 'Adding...' : 'Add Block'}
         </Button>
-      </fetcher.Form>
+      </form>
     </Form>
   );
 }
@@ -728,8 +721,7 @@ function EditBlockForm({
   block: { content?: string; ai?: { systemPrompt?: string; initialUserPrompt?: string } };
   onCancel: () => void;
 }) {
-  const fetcher = useFetcher<ActionSchema>();
-  const [actionData, setActionData] = useState<ActionSchema | null>(null);
+  const { submit, actionData, isSubmitting, fetcher } = useFormSubmission();
 
   const form = useForm<UpdateBlock>({
     resolver: zodResolver(updateBlockSchema),
@@ -743,83 +735,34 @@ function EditBlockForm({
   });
 
   const onSubmit = (formData: UpdateBlock) => {
-    fetcher.submit(
-      { action: 'updateBlock', ...formData },
-      {
-        method: 'POST',
-        encType: 'application/json',
-      }
-    );
+    submit({ action: 'updateBlock', ...formData });
   };
 
   useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data) {
-      setActionData(fetcher.data);
-      if (fetcher.data && 'success' in fetcher.data) {
-        onCancel();
-      }
+    if (fetcher.state === 'idle' && fetcher.data && 'success' in fetcher.data) {
+      onCancel();
     }
   }, [fetcher.data, fetcher.state, onCancel]);
 
   return (
     <Form {...form}>
-      <fetcher.Form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="content"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Content (Markdown)</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter block content in markdown..." rows={3} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <ContentField control={form.control} name="content" />
+        <SystemPromptField control={form.control} name="systemPrompt" />
+        <InitialUserPromptField control={form.control} name="initialUserPrompt" />
 
-        <FormField
-          control={form.control}
-          name="systemPrompt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>AI System Prompt</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter system prompt for AI conversation..." rows={2} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="initialUserPrompt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>AI Initial User Prompt</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter initial user prompt for AI conversation..." rows={2} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {actionData && 'success' in actionData && <div className="text-green-600 text-sm">{actionData.success}</div>}
-
-        {actionData && 'error' in actionData && <div className="text-red-600 text-sm">{actionData.error}</div>}
+        <FormMessages actionData={actionData} />
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button type="submit" disabled={isSubmitting}>
             <Save className="h-4 w-4 mr-2" />
-            {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
         </div>
-      </fetcher.Form>
+      </form>
     </Form>
   );
 }
@@ -837,27 +780,14 @@ function BlockActionForm({
   direction?: 'up' | 'down';
   children: ReactNode;
 }) {
-  const fetcher = useFetcher<ActionSchema>();
+  const { submit } = useFormSubmission();
 
   const onSubmit = () => {
     const formData = { action, stepId, blockIndex, ...(direction && { direction }) };
-
-    fetcher.submit(formData, {
-      method: 'POST',
-      encType: 'application/json',
-    });
+    submit(formData);
   };
 
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit();
-      }}
-    >
-      {children}
-    </form>
-  );
+  return <ActionForm onSubmit={onSubmit}>{children}</ActionForm>;
 }
 
 function StepActionForm({
@@ -871,27 +801,14 @@ function StepActionForm({
   direction?: 'up' | 'down';
   children: ReactNode;
 }) {
-  const fetcher = useFetcher<ActionSchema>();
+  const { submit } = useFormSubmission();
 
   const onSubmit = () => {
     const formData = { action, stepId, ...(direction && { direction }) };
-
-    fetcher.submit(formData, {
-      method: 'POST',
-      encType: 'application/json',
-    });
+    submit(formData);
   };
 
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit();
-      }}
-    >
-      {children}
-    </form>
-  );
+  return <ActionForm onSubmit={onSubmit}>{children}</ActionForm>;
 }
 
 export default function AdminExerciseEdit() {
@@ -1053,39 +970,7 @@ export default function AdminExerciseEdit() {
                                     onCancel={() => setEditingBlockKey(null)}
                                   />
                                 ) : (
-                                  <div className="space-y-3">
-                                    {block?.content && (
-                                      <div>
-                                        <div className="text-xs font-medium text-gray-600 mb-1">Content</div>
-                                        <div className="bg-gray-50 p-2 rounded text-xs whitespace-pre-wrap">
-                                          {block.content}
-                                        </div>
-                                      </div>
-                                    )}
-                                    {block?.ai?.systemPrompt && (
-                                      <div>
-                                        <div className="text-xs font-medium text-gray-600 mb-1">AI System Prompt</div>
-                                        <div className="bg-blue-50 p-2 rounded text-xs whitespace-pre-wrap">
-                                          {block.ai.systemPrompt}
-                                        </div>
-                                      </div>
-                                    )}
-                                    {block?.ai?.initialUserPrompt && (
-                                      <div>
-                                        <div className="text-xs font-medium text-gray-600 mb-1">
-                                          AI Initial User Prompt
-                                        </div>
-                                        <div className="bg-green-50 p-2 rounded text-xs whitespace-pre-wrap">
-                                          {block.ai.initialUserPrompt}
-                                        </div>
-                                      </div>
-                                    )}
-                                    {!(block?.content || block?.ai?.systemPrompt || block?.ai?.initialUserPrompt) && (
-                                      <div className="text-gray-400 text-xs italic">
-                                        This block has no content. Click Edit to add content.
-                                      </div>
-                                    )}
-                                  </div>
+                                  <BlockDisplay block={block} />
                                 )}
                               </div>
                             );

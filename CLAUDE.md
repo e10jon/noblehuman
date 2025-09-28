@@ -46,6 +46,13 @@
 - After code changes, run `npm run typecheck && npm run check` until they both
   pass
 
+## Code Verification
+
+**IMPORTANT: For code verification, ONLY use the following commands:**
+
+- `npm run typecheck` - Validates TypeScript types and compilation
+- `npm run check` - Runs linting and code quality checks
+
 ## Form & Action Patterns
 
 **Actions should use JSON with Zod schemas:**
