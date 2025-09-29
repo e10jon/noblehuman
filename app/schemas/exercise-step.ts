@@ -10,9 +10,9 @@ export const exerciseStepContentSchema = z.object({
           initialUserPrompt: z.string().optional(),
         })
         .optional(),
-      resultPrompt: z.string().optional(),
     })
   ),
+  resultPrompt: z.string().optional(),
 });
 
 export type ExerciseStepContent = z.infer<typeof exerciseStepContentSchema>;

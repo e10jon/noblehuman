@@ -24,10 +24,14 @@ export async function findOrCreateCompletionWithSteps(args: {
     const existingCompletionStep = baseCompletion.steps.find((step) => step.exerciseStepId === exerciseStep.id);
 
     if (!existingCompletionStep) {
+      const requirement = getStepCompletionRequirement(exerciseStep);
+      const isCompleted = requirement === 'none';
+
       await prisma.completionStep.create({
         data: {
           completionId: baseCompletion.id,
           exerciseStepId: exerciseStep.id,
+          completed: isCompleted,
         },
       });
     }
@@ -54,3 +58,45 @@ export type SystemPromptVariables = {
   bio: string;
   urls: string;
 };
+
+type CompletionRequirement = 'result' | 'conversation' | 'none';
+
+export function getStepCompletionRequirement(exerciseStep: ExerciseStep): CompletionRequirement {
+  const hasResultPrompt = Boolean(exerciseStep.content.resultPrompt);
+  const hasAiPrompt = exerciseStep.content.blocks?.some((block) => block.ai);
+
+  if (hasResultPrompt) {
+    return 'result';
+  } else if (hasAiPrompt) {
+    return 'conversation';
+  } else {
+    return 'none';
+  }
+}
+
+export async function checkAndUpdateStepCompletion(
+  completionStepId: string,
+  requirement: CompletionRequirement,
+  data: { result?: string; hasConversation?: boolean }
+): Promise<void> {
+  let shouldComplete = false;
+
+  switch (requirement) {
+    case 'result':
+      shouldComplete = Boolean(data.result?.trim());
+      break;
+    case 'conversation':
+      shouldComplete = Boolean(data.hasConversation);
+      break;
+    case 'none':
+      shouldComplete = true;
+      break;
+  }
+
+  if (shouldComplete) {
+    await prisma.completionStep.update({
+      where: { id: completionStepId },
+      data: { completed: true },
+    });
+  }
+}

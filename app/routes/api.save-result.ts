@@ -1,5 +1,6 @@
 import { data } from 'react-router';
 import { requireUser } from '~/lib/auth';
+import { checkAndUpdateStepCompletion, getStepCompletionRequirement } from '~/lib/chat';
 import { prisma } from '~/lib/db';
 import type { ActionSchema } from '~/schemas/action';
 import { saveResultSchema } from '~/schemas/exercise-step';
@@ -10,11 +11,14 @@ export const action = async ({ request }: { request: Request }) => {
     const json = await request.json();
     const { completionStepId, result } = saveResultSchema.parse(json);
 
-    // Verify that the completion step belongs to the user
-    await prisma.completionStep.findFirstOrThrow({
+    // Verify that the completion step belongs to the user and get the exercise step
+    const completionStep = await prisma.completionStep.findFirstOrThrow({
       where: {
         id: completionStepId,
         completion: { userId: user.id },
+      },
+      include: {
+        exerciseStep: true,
       },
     });
 
@@ -23,6 +27,10 @@ export const action = async ({ request }: { request: Request }) => {
       where: { id: completionStepId },
       data: { result },
     });
+
+    // Check if step should be marked as completed
+    const requirement = getStepCompletionRequirement(completionStep.exerciseStep);
+    await checkAndUpdateStepCompletion(completionStepId, requirement, { result });
 
     return data({ success: 'Result saved successfully!' } satisfies ActionSchema, { status: 200 });
   } catch {

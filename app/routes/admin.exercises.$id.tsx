@@ -31,12 +31,7 @@ import {
 import type { Route } from './+types/admin.exercises.$id';
 
 // Utility functions
-function createBlockData(data: {
-  content?: string;
-  systemPrompt?: string;
-  initialUserPrompt?: string;
-  resultPrompt?: string;
-}) {
+function createBlockData(data: { content?: string; systemPrompt?: string; initialUserPrompt?: string }) {
   return {
     content: data.content || undefined,
     ai:
@@ -46,7 +41,6 @@ function createBlockData(data: {
             initialUserPrompt: data.initialUserPrompt || undefined,
           }
         : undefined,
-    resultPrompt: data.resultPrompt || undefined,
   };
 }
 
@@ -165,32 +159,6 @@ function InitialUserPromptField<T extends FieldValues>({
   );
 }
 
-function ResultPromptField<T extends FieldValues>({
-  control,
-  name,
-  rows = 2,
-}: {
-  control: Control<T>;
-  name: Path<T>;
-  rows?: number;
-}) {
-  return (
-    <FormField
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Result Prompt</FormLabel>
-          <FormControl>
-            <Textarea placeholder="Prompt to guide users on what to capture as results..." rows={rows} {...field} />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-}
-
 function FormMessages({ actionData }: { actionData: ActionSchema | null }) {
   if (!actionData) return null;
 
@@ -221,7 +189,7 @@ function ActionForm({ onSubmit, children }: { onSubmit: () => void; children: Re
 function BlockDisplay({
   block,
 }: {
-  block: { content?: string; ai?: { systemPrompt?: string; initialUserPrompt?: string }; resultPrompt?: string };
+  block: { content?: string; ai?: { systemPrompt?: string; initialUserPrompt?: string } };
 }) {
   return (
     <div className="space-y-3">
@@ -247,13 +215,7 @@ function BlockDisplay({
           <div className="bg-green-50 p-2 rounded text-sm whitespace-pre-wrap">{block.ai.initialUserPrompt}</div>
         </div>
       )}
-      {block?.resultPrompt && (
-        <div>
-          <div className="text-xs font-medium text-gray-600 mb-1">Result Prompt</div>
-          <div className="bg-purple-50 p-2 rounded text-sm whitespace-pre-wrap">{block.resultPrompt}</div>
-        </div>
-      )}
-      {!(block?.content || block?.ai?.systemPrompt || block?.ai?.initialUserPrompt || block?.resultPrompt) && (
+      {!(block?.content || block?.ai?.systemPrompt || block?.ai?.initialUserPrompt) && (
         <div className="text-gray-400 text-sm italic">This block has no content. Click Edit to add content.</div>
       )}
     </div>
@@ -287,7 +249,8 @@ async function handleAddStep(
   params: { id: string },
   parsed: {
     title: string;
-    blocks: Array<{ content?: string; systemPrompt?: string; initialUserPrompt?: string; resultPrompt?: string }>;
+    blocks: Array<{ content?: string; systemPrompt?: string; initialUserPrompt?: string }>;
+    resultPrompt?: string;
   }
 ) {
   const maxOrder = await prisma.exerciseStep.findFirst({
@@ -300,6 +263,7 @@ async function handleAddStep(
 
   const stepContent = {
     blocks: parsed.blocks.map(createBlockData),
+    resultPrompt: parsed.resultPrompt || undefined,
   };
 
   await prisma.exerciseStep.create({
@@ -314,16 +278,16 @@ async function handleAddStep(
   return data({ success: 'Step added successfully!' } satisfies ActionSchema, { status: 200 });
 }
 
-async function handleUpdateStep(parsed: {
-  stepId: string;
-  title: string;
-  content?: string;
-  systemPrompt?: string;
-  initialUserPrompt?: string;
-  resultPrompt?: string;
-}) {
+async function handleUpdateStep(parsed: { stepId: string; title: string; resultPrompt?: string }) {
+  // Get existing step content to preserve blocks
+  const existingStep = await prisma.exerciseStep.findUnique({
+    where: { id: parsed.stepId },
+    select: { content: true },
+  });
+
   const stepContent = {
-    blocks: [createBlockData(parsed)],
+    blocks: existingStep?.content?.blocks || [],
+    resultPrompt: parsed.resultPrompt || undefined,
   };
 
   await prisma.exerciseStep.update({
@@ -567,26 +531,28 @@ type BlockWithId = Block & { id: string };
 function AddStepForm() {
   const { submit, actionData, isSubmitting } = useFormSubmission();
   const [blocks, setBlocks] = useState<BlockWithId[]>([
-    { id: crypto.randomUUID(), content: '', systemPrompt: '', initialUserPrompt: '', resultPrompt: '' },
+    { id: crypto.randomUUID(), content: '', systemPrompt: '', initialUserPrompt: '' },
   ]);
 
   const form = useForm<AddStep>({
     resolver: zodResolver(addStepSchema),
-    defaultValues: { title: '', blocks: [{ content: '', systemPrompt: '', initialUserPrompt: '', resultPrompt: '' }] },
+    defaultValues: { title: '', blocks: [{ content: '', systemPrompt: '', initialUserPrompt: '' }], resultPrompt: '' },
   });
 
   const onSubmit = (formData: AddStep) => {
     const cleanBlocks = blocks.map(({ id, ...block }) => block);
-    submit({ action: 'addStep', title: formData.title, blocks: cleanBlocks });
+    submit({
+      action: 'addStep',
+      title: formData.title,
+      blocks: cleanBlocks,
+      resultPrompt: formData.resultPrompt,
+    } as SubmitTarget);
     form.reset();
-    setBlocks([{ id: crypto.randomUUID(), content: '', systemPrompt: '', initialUserPrompt: '', resultPrompt: '' }]);
+    setBlocks([{ id: crypto.randomUUID(), content: '', systemPrompt: '', initialUserPrompt: '' }]);
   };
 
   const addBlock = () => {
-    setBlocks([
-      ...blocks,
-      { id: crypto.randomUUID(), content: '', systemPrompt: '', initialUserPrompt: '', resultPrompt: '' },
-    ]);
+    setBlocks([...blocks, { id: crypto.randomUUID(), content: '', systemPrompt: '', initialUserPrompt: '' }]);
   };
 
   const removeBlock = (index: number) => {
@@ -665,19 +631,6 @@ function AddStepForm() {
                   onChange={(e) => updateBlock(index, 'initialUserPrompt', e.target.value)}
                 />
               </div>
-
-              <div>
-                <label htmlFor={`block-result-${index}`} className="text-sm font-medium">
-                  Result Prompt
-                </label>
-                <Textarea
-                  id={`block-result-${index}`}
-                  placeholder="Prompt to guide users on what to capture as results..."
-                  rows={2}
-                  value={block.resultPrompt || ''}
-                  onChange={(e) => updateBlock(index, 'resultPrompt', e.target.value)}
-                />
-              </div>
             </div>
           ))}
         </div>
@@ -686,6 +639,20 @@ function AddStepForm() {
           <Plus className="h-4 w-4 mr-2" />
           Add Block
         </Button>
+
+        <FormField
+          control={form.control}
+          name="resultPrompt"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Result Prompt</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Prompt to guide users on what to capture as results..." rows={2} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormMessages actionData={actionData} />
 
@@ -709,25 +676,20 @@ function EditStepForm({
       blocks?: Array<{
         content?: string;
         ai?: { systemPrompt?: string; initialUserPrompt?: string };
-        resultPrompt?: string;
       }>;
+      resultPrompt?: string;
     };
   };
   onCancel: () => void;
 }) {
   const { submit, actionData, isSubmitting, fetcher } = useFormSubmission();
 
-  const block = step.content?.blocks?.[0];
-
   const form = useForm<UpdateStep>({
     resolver: zodResolver(updateStepSchema),
     defaultValues: {
       stepId: step.id,
       title: step.title,
-      content: block?.content || '',
-      systemPrompt: block?.ai?.systemPrompt || '',
-      initialUserPrompt: block?.ai?.initialUserPrompt || '',
-      resultPrompt: block?.resultPrompt || '',
+      resultPrompt: step.content?.resultPrompt || '',
     },
   });
 
@@ -757,10 +719,19 @@ function EditStepForm({
             </FormItem>
           )}
         />
-        <ContentField control={form.control} name="content" />
-        <SystemPromptField control={form.control} name="systemPrompt" rows={3} />
-        <InitialUserPromptField control={form.control} name="initialUserPrompt" />
-        <ResultPromptField control={form.control} name="resultPrompt" />
+        <FormField
+          control={form.control}
+          name="resultPrompt"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Result Prompt</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Prompt to guide users on what to capture as results..." rows={2} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormMessages actionData={actionData} />
 
@@ -783,7 +754,7 @@ function AddBlockForm({ stepId }: { stepId: string }) {
 
   const form = useForm<AddBlock>({
     resolver: zodResolver(addBlockSchema),
-    defaultValues: { stepId, content: '', systemPrompt: '', initialUserPrompt: '', resultPrompt: '' },
+    defaultValues: { stepId, content: '', systemPrompt: '', initialUserPrompt: '' },
   });
 
   const onSubmit = (formData: AddBlock) => {
@@ -797,7 +768,6 @@ function AddBlockForm({ stepId }: { stepId: string }) {
         <ContentField control={form.control} name="content" />
         <SystemPromptField control={form.control} name="systemPrompt" />
         <InitialUserPromptField control={form.control} name="initialUserPrompt" />
-        <ResultPromptField control={form.control} name="resultPrompt" />
 
         <FormMessages actionData={actionData} />
 
@@ -818,7 +788,7 @@ function EditBlockForm({
 }: {
   stepId: string;
   blockIndex: number;
-  block: { content?: string; ai?: { systemPrompt?: string; initialUserPrompt?: string }; resultPrompt?: string };
+  block: { content?: string; ai?: { systemPrompt?: string; initialUserPrompt?: string } };
   onCancel: () => void;
 }) {
   const { submit, actionData, isSubmitting, fetcher } = useFormSubmission();
@@ -831,7 +801,6 @@ function EditBlockForm({
       content: block.content || '',
       systemPrompt: block.ai?.systemPrompt || '',
       initialUserPrompt: block.ai?.initialUserPrompt || '',
-      resultPrompt: block.resultPrompt || '',
     },
   });
 
@@ -851,7 +820,6 @@ function EditBlockForm({
         <ContentField control={form.control} name="content" />
         <SystemPromptField control={form.control} name="systemPrompt" />
         <InitialUserPromptField control={form.control} name="initialUserPrompt" />
-        <ResultPromptField control={form.control} name="resultPrompt" />
 
         <FormMessages actionData={actionData} />
 
@@ -1098,6 +1066,13 @@ export default function AdminExerciseEdit() {
                       ) : (
                         <div className="text-gray-500 text-sm italic">
                           This step has no blocks. Use the legacy step editor above or add blocks below.
+                        </div>
+                      )}
+
+                      {step.content?.resultPrompt && (
+                        <div className="border border-purple-200 bg-purple-50 rounded p-3">
+                          <div className="text-xs font-medium text-purple-800 mb-1">Result Prompt</div>
+                          <div className="text-sm text-purple-700 whitespace-pre-wrap">{step.content.resultPrompt}</div>
                         </div>
                       )}
                     </div>

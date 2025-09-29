@@ -12,7 +12,7 @@ interface ResultEditorProps {
 }
 
 const ResultEditor = forwardRef<HTMLDivElement, ResultEditorProps>(
-  ({ value, onChange, placeholder, className, autoFocus = false }, ref) => {
+  ({ value, onChange, className, autoFocus = false }, ref) => {
     const editor = useEditor({
       immediatelyRender: false,
       extensions: [StarterKit],

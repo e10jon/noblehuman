@@ -144,15 +144,15 @@ export default function Exercise() {
                           />
                         </div>
                       )}
-                      {block.resultPrompt && completionStep && (
-                        <ResultCapture
-                          completionStepId={completionStep.id}
-                          resultPrompt={block.resultPrompt}
-                          initialResult={completionStep.result || undefined}
-                        />
-                      )}
                     </div>
                   ))}
+                  {step.content?.resultPrompt && completionStep && (
+                    <ResultCapture
+                      completionStepId={completionStep.id}
+                      resultPrompt={step.content.resultPrompt}
+                      initialResult={completionStep.result || undefined}
+                    />
+                  )}
                 </CardContent>
               </Card>
             );

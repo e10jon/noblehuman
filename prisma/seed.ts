@@ -55,10 +55,10 @@ Keep your responses warm, insightful, and focused on helping them develop a comp
                     initialUserPrompt:
                       'I want to explore the sufferings I carry quietly or subconsciously. Help me identify patterns or areas where I might be experiencing dukkha without fully acknowledging it.',
                   },
-                  resultPrompt:
-                    'What insights did you discover about the sufferings you carry? What patterns of dukkha became clearer to you?',
                 },
               ],
+              resultPrompt:
+                'What insights did you discover about the sufferings you carry? What patterns of dukkha became clearer to you?',
             },
           },
           {
@@ -90,10 +90,10 @@ Be curious and supportive. Help them trust their inner wisdom about what they tr
                     initialUserPrompt:
                       'Help me explore what I need more of and what I need less of to live my best life. I want to go beyond surface-level answers to understand my deeper needs and desires.',
                   },
-                  resultPrompt:
-                    'What did you discover about what you need more of and less of? What desires and needs became clearer to you?',
                 },
               ],
+              resultPrompt:
+                'What did you discover about what you need more of and less of? What desires and needs became clearer to you?',
             },
           },
           {
@@ -156,10 +156,10 @@ Be supportive but also challenge them to be honest. This exercise is about gaini
                     initialUserPrompt:
                       "I want to explore my Ikigai through both light and shadow. Help me examine all four dimensions: what I love/dislike, my competencies/ineptitudes, my financial successes/missed opportunities, and my impact/indifference. Let's go through each one systematically.",
                   },
-                  resultPrompt:
-                    'Synthesize your insights from the Ikigai exploration. For each dimension (Passion/Dislikes, Competency/Ineptitude, Financial Success/Missed, Impact/Indifference), capture your key insights in 1-3 words or a short phrase.',
                 },
               ],
+              resultPrompt:
+                'Synthesize your insights from the Ikigai exploration. For each dimension (Passion/Dislikes, Competency/Ineptitude, Financial Success/Missed, Impact/Indifference), capture your key insights in 1-3 words or a short phrase.',
             },
           },
           {
@@ -206,10 +206,10 @@ Be supportive and help them trust their inner knowing about what their best life
                     initialUserPrompt:
                       "Based on everything I've explored about my suffering, desires, and Ikigai, help me craft a vision of my Best Life. I want to create something that feels both bold and authentic to who I truly am.",
                   },
-                  resultPrompt:
-                    'Write your Best Life statement in 1-2 sentences. Let it be bold and true, even if it scares you or feels far away. This is the start of your journey, not the final draft.',
                 },
               ],
+              resultPrompt:
+                'Write your Best Life statement in 1-2 sentences. Let it be bold and true, even if it scares you or feels far away. This is the start of your journey, not the final draft.',
             },
           },
         ],
