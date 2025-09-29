@@ -7,9 +7,9 @@ import { $path } from 'safe-routes';
 import { Alert, AlertDescription } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Editor } from '~/components/ui/editor';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '~/components/ui/form';
 import { Input } from '~/components/ui/input';
-import { Textarea } from '~/components/ui/textarea';
 import type { ActionSchema } from '~/schemas/action';
 import { requireUser } from '../lib/auth';
 import { prisma } from '../lib/db';
@@ -99,7 +99,7 @@ export default function Profile() {
                     <FormItem>
                       <FormLabel>Bio</FormLabel>
                       <FormControl>
-                        <Textarea rows={4} placeholder="Tell us about yourself..." {...field} />
+                        <Editor value={field.value} onChange={field.onChange} placeholder="Tell us about yourself..." />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

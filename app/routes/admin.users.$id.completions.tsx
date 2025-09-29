@@ -122,7 +122,11 @@ export default function AdminUserCompletions() {
                       {step.result && (
                         <div className="mb-3 p-3 bg-gray-50 rounded text-sm">
                           <p className="font-medium text-gray-700 mb-1">Result:</p>
-                          <p className="text-gray-600">{step.result}</p>
+                          <p
+                            className="text-gray-600 prose prose-sm"
+                            // biome-ignore lint/security/noDangerouslySetInnerHtml: We trust this.
+                            dangerouslySetInnerHTML={{ __html: step.result }}
+                          />
                         </div>
                       )}
 

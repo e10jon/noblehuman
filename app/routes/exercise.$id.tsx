@@ -86,7 +86,6 @@ function ResultCapture({
           onChange={handleResultChange}
           placeholder="Document your results, insights, and key takeaways..."
           className="min-h-[120px]"
-          autoFocus={!savedResult}
         />
 
         {showButtons && (

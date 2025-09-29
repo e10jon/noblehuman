@@ -21,7 +21,7 @@ const Editor = forwardRef<HTMLDivElement, EditorProps>(({ value, onChange, place
     },
     editorProps: {
       attributes: {
-        class: cn('prose prose-sm max-w-none focus:outline-none min-h-[60px] px-3 py-2', className),
+        class: cn('prose prose-sm max-w-none focus:outline-none min-h-[120px] px-3 py-2', className),
       },
     },
   });

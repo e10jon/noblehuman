@@ -23,7 +23,7 @@ export default function SystemPromptEditor({ value, onChange, onPreview }: Syste
     extensions: [StarterKit],
     content: value,
     onUpdate: ({ editor }) => {
-      onChange(editor.getText());
+      onChange(editor.getHTML());
     },
     editorProps: {
       attributes: {

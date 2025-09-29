@@ -1,6 +1,8 @@
 import { openai } from '@ai-sdk/openai';
 import { convertToModelMessages, streamText, type UIMessage } from 'ai';
+import { convertHtmlToMarkdown } from 'dom-to-semantic-markdown';
 import Handlebars from 'handlebars';
+import { JSDOM } from 'jsdom';
 import { checkAndUpdateStepCompletion, getStepCompletionRequirement, type SystemPromptVariables } from '~/lib/chat';
 import type { User } from '../../prisma/generated/client';
 import { requireUser } from '../lib/auth';
@@ -105,12 +107,18 @@ const createCompleteSystemPrompt = async ({
   // Prepare data for Handlebars template
   const templateData = {
     bio: user.data.bio,
-    urls: user.data.urls.length > 0 ? user.data.urls.map((url) => url.url).join(', ') : '',
+    urls: user.data.urls.length > 0 ? user.data.urls.map((u) => `${u.description}: ${u.url}`).join(', ') : '',
   } satisfies SystemPromptVariables;
 
   // Compile and execute the Handlebars template
   const compiledTemplate = Handlebars.compile(template);
-  let prompt = compiledTemplate(templateData);
+  const htmlPrompt = compiledTemplate(templateData);
+
+  // Convert HTML to markdown for AI consumption
+  const dom = new JSDOM();
+  let prompt = convertHtmlToMarkdown(htmlPrompt, {
+    overrideDOMParser: new dom.window.DOMParser(),
+  });
 
   // Add supplemental system prompt if provided
   if (supplementalSystemPrompt) {
