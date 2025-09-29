@@ -2,6 +2,7 @@ import { useChat } from '@ai-sdk/react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { DefaultChatTransport, type UIMessage } from 'ai';
+import { Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '~/lib/utils';
@@ -24,7 +25,7 @@ export default function Conversation({
   const [hasContent, setHasContent] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const { messages, sendMessage } = useChat({
+  const { messages, sendMessage, status } = useChat({
     messages: initialMessages,
     transport: new DefaultChatTransport({
       prepareSendMessagesRequest({ messages }) {
@@ -124,6 +125,14 @@ export default function Conversation({
               </div>
             </div>
           ))}
+          {(status === 'submitted' || status === 'streaming') && (
+            <div className="m-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-900 mr-8">
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-gray-600 dark:text-gray-400">Thinking...</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

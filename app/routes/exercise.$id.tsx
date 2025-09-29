@@ -3,7 +3,9 @@ import { Link, useFetcher, useLoaderData } from 'react-router';
 import { $path } from 'safe-routes';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import type { SaveResult } from '~/schemas/exercise-step';
+import type { Completion, CompletionStep } from '../../prisma/generated/client';
 import Conversation from '../components/Conversation';
 import { ResultEditor } from '../components/ResultEditor';
 import { requireUser } from '../lib/auth';
@@ -32,10 +34,12 @@ function ResultCapture({
   completionStepId,
   resultPrompt,
   initialResult,
+  onCompletionUpdate,
 }: {
   completionStepId: string;
   resultPrompt: string;
   initialResult?: string;
+  onCompletionUpdate?: (completion: Completion & { steps: CompletionStep[] }) => void;
 }) {
   const fetcher = useFetcher();
   const [result, setResult] = useState(initialResult || '');
@@ -71,8 +75,13 @@ function ResultCapture({
     ) {
       setSavedResult(result);
       lastProcessedDataRef.current = fetcher.data;
+
+      // Notify parent component of completion update
+      if ('completion' in fetcher.data && onCompletionUpdate) {
+        onCompletionUpdate(fetcher.data.completion);
+      }
     }
-  }, [fetcher.state, fetcher.data, result]);
+  }, [fetcher.state, fetcher.data, result, onCompletionUpdate]);
 
   return (
     <div className="mt-6 p-4 border border-purple-200 rounded-lg bg-purple-50">
@@ -106,7 +115,31 @@ function ResultCapture({
 }
 
 export default function Exercise() {
-  const { exercise, completion } = useLoaderData<typeof loader>();
+  const { exercise, completion: initialCompletion } = useLoaderData<typeof loader>();
+  const [completion, setCompletion] = useState(initialCompletion);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+
+  const handleCompletionUpdate = (updatedCompletion: Completion & { steps: CompletionStep[] }) => {
+    setCompletion((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        ...updatedCompletion,
+        steps: prev.steps.map((step) => {
+          const updated = updatedCompletion.steps.find((s) => s.id === step.id);
+          return updated ? { ...step, ...updated } : step;
+        }),
+      };
+    });
+  };
+
+  const allStepsCompleted = completion?.steps?.every((step) => step.completed);
+
+  useEffect(() => {
+    if (allStepsCompleted && completion?.completionMessage) {
+      setShowCompletionDialog(true);
+    }
+  }, [allStepsCompleted, completion?.completionMessage]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -117,6 +150,27 @@ export default function Exercise() {
           </Button>
         </div>
         <h1 className="text-3xl font-bold mb-8">{exercise.name}</h1>
+
+        <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
+          <DialogContent className="max-w-2xl bg-white">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">🎉 Exercise Completed!</DialogTitle>
+              <DialogDescription className="sr-only">
+                You have successfully completed all steps of this exercise.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4 prose prose-green max-w-none">
+              {completion?.completionMessage && (
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: Server-generated completion message is safe
+                <div dangerouslySetInnerHTML={{ __html: completion.completionMessage }} />
+              )}
+              <div className="mt-4">
+                <Link to={$path('/')}>← Back to exercises</Link>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <div className="space-y-4">
           {exercise.steps.map((step) => {
             const completionStep = completion?.steps.find((cs) => cs.exerciseStepId === step.id);
@@ -150,6 +204,7 @@ export default function Exercise() {
                       completionStepId={completionStep.id}
                       resultPrompt={step.content.resultPrompt}
                       initialResult={completionStep.result || undefined}
+                      onCompletionUpdate={handleCompletionUpdate}
                     />
                   )}
                 </CardContent>

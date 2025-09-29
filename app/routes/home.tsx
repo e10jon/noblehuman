@@ -50,7 +50,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export default function Index() {
-  const { exercises, user } = useLoaderData<typeof loader>();
+  const { exercises, completions, user } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
 
   return (
@@ -133,20 +133,40 @@ export default function Index() {
           </Card>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {exercises.map((exercise) => (
-              <Card key={exercise.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    <Link
-                      to={$path('/exercise/:id', { id: exercise.id })}
-                      className="text-indigo-600 hover:text-indigo-700"
-                    >
-                      {exercise.name}
-                    </Link>
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            ))}
+            {exercises.map((exercise) => {
+              const completion = completions?.find((c) => c.exerciseId === exercise.id);
+              const completedSteps = completion?.steps.filter((s) => s.completed).length || 0;
+              const totalSteps = exercise.steps.length;
+              const isCompleted = completedSteps === totalSteps && totalSteps > 0;
+
+              return (
+                <Card key={exercise.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      <Link
+                        to={$path('/exercise/:id', { id: exercise.id })}
+                        className="text-indigo-600 hover:text-indigo-700"
+                      >
+                        {exercise.name}
+                      </Link>
+                    </CardTitle>
+                    {user && (
+                      <CardDescription>
+                        {isCompleted ? (
+                          <span className="text-green-600 font-medium">✓ Completed</span>
+                        ) : totalSteps > 0 ? (
+                          <span className="text-gray-600">
+                            Progress: {completedSteps}/{totalSteps} steps
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">Not started</span>
+                        )}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
+                </Card>
+              );
+            })}
           </div>
 
           {exercises.length === 0 && (

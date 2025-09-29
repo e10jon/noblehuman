@@ -1,3 +1,6 @@
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+import Handlebars from 'handlebars';
 import type { Completion, CompletionStep, ConversationMessage, ExerciseStep } from '../../prisma/generated/client';
 import { prisma } from './db';
 
@@ -24,14 +27,11 @@ export async function findOrCreateCompletionWithSteps(args: {
     const existingCompletionStep = baseCompletion.steps.find((step) => step.exerciseStepId === exerciseStep.id);
 
     if (!existingCompletionStep) {
-      const requirement = getStepCompletionRequirement(exerciseStep);
-      const isCompleted = requirement === 'none';
-
       await prisma.completionStep.create({
         data: {
           completionId: baseCompletion.id,
           exerciseStepId: exerciseStep.id,
-          completed: isCompleted,
+          completed: false,
         },
       });
     }
@@ -59,44 +59,82 @@ export type SystemPromptVariables = {
   urls: string;
 };
 
-type CompletionRequirement = 'result' | 'conversation' | 'none';
+export type CompletionMessageVariables = {
+  content?: string;
+  result?: string;
+}[];
 
-export function getStepCompletionRequirement(exerciseStep: ExerciseStep): CompletionRequirement {
-  const hasResultPrompt = Boolean(exerciseStep.content.resultPrompt);
-  const hasAiPrompt = exerciseStep.content.blocks?.some((block) => block.ai);
-
-  if (hasResultPrompt) {
-    return 'result';
-  } else if (hasAiPrompt) {
-    return 'conversation';
-  } else {
-    return 'none';
+export async function generateCompletionMessage(
+  completion: Completion & {
+    steps: (CompletionStep & { exerciseStep: ExerciseStep })[];
   }
+): Promise<string> {
+  const exerciseCompletedSettings = await prisma.systemSettings.findUnique({
+    where: { key: 'exerciseCompletedPromptTemplate' },
+  });
+
+  const template = exerciseCompletedSettings?.stringValue;
+  if (!template) {
+    return 'Congratulations! You have completed all the steps of this exercise.';
+  }
+
+  const exerciseStepsData = completion.steps.reduce<CompletionMessageVariables>((acc, step) => {
+    const stepData: CompletionMessageVariables[number] = {};
+    const content = step.exerciseStep.content?.blocks?.map((block) => block.content).join(' ');
+    if (content?.trim()) stepData.content = content;
+    if (step.result?.trim()) stepData.result = step.result;
+    if (Object.keys(stepData).length > 0) acc.push(stepData);
+    return acc;
+  }, []);
+
+  const compiled = Handlebars.compile(template);
+  const prompt = compiled({ exerciseSteps: exerciseStepsData });
+
+  const { text } = await generateText({
+    model: openai('gpt-4o'),
+    prompt,
+  });
+
+  return text;
 }
 
 export async function checkAndUpdateStepCompletion(
   completionStepId: string,
-  requirement: CompletionRequirement,
-  data: { result?: string; hasConversation?: boolean }
+  exerciseStep: ExerciseStep,
+  result: string
 ): Promise<void> {
-  let shouldComplete = false;
+  const hasResultPrompt = Boolean(exerciseStep.content.resultPrompt);
+  const hasResult = Boolean(result?.trim());
 
-  switch (requirement) {
-    case 'result':
-      shouldComplete = Boolean(data.result?.trim());
-      break;
-    case 'conversation':
-      shouldComplete = Boolean(data.hasConversation);
-      break;
-    case 'none':
-      shouldComplete = true;
-      break;
-  }
-
-  if (shouldComplete) {
-    await prisma.completionStep.update({
+  if (hasResultPrompt && hasResult) {
+    const step = await prisma.completionStep.update({
       where: { id: completionStepId },
       data: { completed: true },
     });
+
+    // Check if all steps in the completion are now completed and the message is not set
+    const completion = await prisma.completion.findFirst({
+      where: {
+        id: step.completionId,
+        steps: { every: { completed: true } },
+        completionMessage: null,
+      },
+      include: {
+        steps: {
+          include: { exerciseStep: true },
+          orderBy: { exerciseStep: { order: 'asc' } },
+        },
+        exercise: true,
+      },
+    });
+
+    if (completion) {
+      const completionMessage = await generateCompletionMessage(completion);
+
+      await prisma.completion.update({
+        where: { id: completion.id },
+        data: { completionMessage },
+      });
+    }
   }
 }

@@ -3,17 +3,19 @@ import StarterKit from '@tiptap/starter-kit';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 
-interface SystemPromptEditorProps {
+interface ExerciseCompletedPromptEditorProps {
   value: string;
   onChange: (value: string) => void;
 }
 
 const availableVariables = [
-  { variable: '{{bio}}', description: 'User bio description' },
-  { variable: '{{urls}}', description: 'Comma-separated list of user URLs' },
+  { variable: '{{#each exerciseSteps}}', description: 'Loop through exercise steps' },
+  { variable: '{{content}}', description: 'Step content (use inside each loop)' },
+  { variable: '{{result}}', description: 'Step result (use inside each loop)' },
+  { variable: '{{/each}}', description: 'End each loop' },
 ];
 
-export default function SystemPromptEditor({ value, onChange }: SystemPromptEditorProps) {
+export default function ExerciseCompletedPromptEditor({ value, onChange }: ExerciseCompletedPromptEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [StarterKit],
@@ -38,9 +40,10 @@ export default function SystemPromptEditor({ value, onChange }: SystemPromptEdit
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">System Prompt Template</CardTitle>
+          <CardTitle className="text-lg">Exercise Completed Prompt Template</CardTitle>
           <CardDescription>
-            Create a system prompt template using Handlebars syntax. Click variables below to insert them.
+            Create a prompt template for exercise completion using Handlebars syntax. Click variables below to insert
+            them.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

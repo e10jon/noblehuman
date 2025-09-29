@@ -260,6 +260,36 @@ Be supportive and help them trust their inner knowing about what their best life
     },
   });
 
+  // Create exercise completed prompt template
+  await prisma.systemSettings.create({
+    data: {
+      key: 'exerciseCompletedPromptTemplate',
+      stringValue: `<p>Based on the person's journey through this NobleHuman exercise, create a deeply personal completion message that honors their courage, insights, and transformation.</p>
+
+<p><strong>Their Journey:</strong></p>
+{{#each exerciseSteps}}
+{{#if result}}
+<p><strong>Step {{@index}}:</strong></p>
+{{#if content}}<p>Context: {{content}}</p>{{/if}}
+<p>Their Response: {{result}}</p>
+{{/if}}
+{{/each}}
+
+<p><strong>Your completion message should:</strong></p>
+<ul>
+<li>Acknowledge the profound work they've done in facing themselves honestly</li>
+<li>Reflect back 2-3 specific insights or breakthroughs from their responses</li>
+<li>Connect their discoveries to the larger journey of living their Best Life</li>
+<li>Offer a blessing or encouragement for the path ahead</li>
+<li>Remind them that transformation is a practice, not a destination</li>
+</ul>
+
+<p><strong>Tone:</strong> Warm, celebratory, and deeply respectful. Write as if you've witnessed something sacred - because you have. Keep it concise (2-3 paragraphs) but meaningful.</p>
+
+<p>End with a simple blessing or affirmation that they can carry forward.</p>`,
+    },
+  });
+
   console.log('Seeding completed successfully!');
 }
 

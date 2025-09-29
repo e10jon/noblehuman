@@ -3,7 +3,7 @@ import { convertToModelMessages, streamText, type UIMessage } from 'ai';
 import { convertHtmlToMarkdown } from 'dom-to-semantic-markdown';
 import Handlebars from 'handlebars';
 import { JSDOM } from 'jsdom';
-import { checkAndUpdateStepCompletion, getStepCompletionRequirement, type SystemPromptVariables } from '~/lib/chat';
+import type { SystemPromptVariables } from '~/lib/chat';
 import type { User } from '../../prisma/generated/client';
 import { requireUser } from '../lib/auth';
 import { prisma } from '../lib/db';
@@ -69,17 +69,6 @@ export const action = async ({ request }: { request: Request }) => {
             parts: [{ type: 'text', text: result.text }],
           },
         });
-
-        // Check if step should be marked as completed after conversation
-        const completionStep = await prisma.completionStep.findUnique({
-          where: { id: completionStepId },
-          include: { exerciseStep: true },
-        });
-
-        if (completionStep) {
-          const requirement = getStepCompletionRequirement(completionStep.exerciseStep);
-          await checkAndUpdateStepCompletion(completionStepId, requirement, { hasConversation: true });
-        }
       }
     },
   });

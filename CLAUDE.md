@@ -53,6 +53,8 @@
 - `npm run typecheck` - Validates TypeScript types and compilation
 - `npm run check` - Runs linting and code quality checks
 
+**Do NOT run `npm run dev`**
+
 ## Form & Action Patterns
 
 **Actions should use JSON with Zod schemas:**
