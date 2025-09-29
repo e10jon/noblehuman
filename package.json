@@ -6,7 +6,8 @@
     "build": "biome check . && tsc && react-router build",
     "preview": "vite preview",
     "typecheck": "react-router typegen && safe-routes typegen && tsgo --noEmit",
-    "check": "biome check --write .",
+    "format": "biome check --write .",
+    "check": "npm run typecheck && npm run format",
     "start": "react-router-serve ./build/server/index.js"
   },
   "author": "Ethan Jon",

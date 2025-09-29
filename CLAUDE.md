@@ -43,17 +43,8 @@
 - If a feature **isn't** mentioned in the requirements, it shouldn't be in the
   code
 - Prioritize brevity and minimalism over robustness
-- After code changes, run `npm run typecheck && npm run check` until they both
-  pass
-
-## Code Verification
-
-**IMPORTANT: For code verification, ONLY use the following commands:**
-
-- `npm run typecheck` - Validates TypeScript types and compilation
-- `npm run check` - Runs linting and code quality checks
-
-**Do NOT run `npm run dev`**
+- After code changes, run `npm run check` until it passes
+- **Do NOT run `npm run dev`** to validate code
 
 ## Form & Action Patterns
 
